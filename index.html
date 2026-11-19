@@ -560,6 +560,7 @@ const I18N = (() => {
       '<b><span class="ob">6</span> ≡ 3/<i>m</i>:</b> a sixfold rotoinversion axis is equivalent to a threefold rotation axis with a mirror plane perpendicular to it. Try it: ▶ and ▶ 3/<i>m</i> take every face to the same face.',
       '<b><span class="ob">6</span> ≡ 3/<i>m</i> :</b> un axe de rotoinversion d’ordre 6 équivaut à un axe de rotation d’ordre 3 avec un plan miroir perpendiculaire. Essayez : ▶ et ▶ 3/<i>m</i> amènent chaque face sur la même face.',
       '<b><span class="ob">6</span> ≡ 3/<i>m</i>:</b> un eje de rotoinversión senario equivale a un eje ternario con un plano de reflexión perpendicular. Pruébalo: ▶ y ▶ 3/<i>m</i> llevan cada cara a la misma cara.'),
+    stereoMirror: L('Spiegelebene (Großkreis); Spiegelebene ⊥ c = dicker Grundkreis mit <i>m</i>', 'mirror plane (great circle); mirror ⊥ c = thick primitive circle marked <i>m</i>', 'plan miroir (grand cercle) ; miroir ⊥ c = cercle primitif épais marqué <i>m</i>', 'plano de reflexión (círculo máximo); espejo ⊥ c = círculo primitivo grueso con <i>m</i>'),
     lang: L('Sprache', 'Language', 'Langue', 'Idioma')
   };
   const systems = {
@@ -929,15 +930,19 @@ I18N.formDef = (de, lang) => {
 I18N.stereoHelp = {
   de: { t: 'Was ist ein Flächenpol?', s: ['Man denkt sich den Kristall im Mittelpunkt einer großen Kugel.', 'Auf jeder Fläche errichtet man die Senkrechte (Flächennormale). Wo sie die Kugel durchstößt, liegt der <b>Flächenpol P</b>.', 'P wird mit dem Südpol S verbunden; der Schnittpunkt <b>P′</b> mit der Äquatorebene ist der Punkt im Stereogramm (●). Pole der unteren Halbkugel projiziert man zum Nordpol (○).'],
     r: '<b>Faustregeln:</b> Pol in der Mitte = waagerechte Fläche; Pol auf dem Grundkreis = senkrechte Fläche (z. B. Prisma); je steiler die Fläche, desto weiter außen. Größe und Form der Flächen spielen keine Rolle – nur ihre Richtung. Deshalb zeigt das Polmuster die Symmetrie unverfälscht.',
+    m: '<b>Spiegelebenen als Großkreise:</b> Jede Spiegelebene geht durch den Kristallmittelpunkt und schneidet die Kugel in einem Großkreis. Im Stereogramm erscheint er als Durchmesser (Ebene enthält c), als Grundkreis (Ebene ⊥ c, dick und mit <i>m</i> markiert) oder als Kreisbogen zwischen zwei gegenüberliegenden Randpunkten (geneigte Ebene).',
     l: { P: 'Pol', S: 'Südpol', E: 'Äquatorebene' } },
   en: { t: 'What is a face pole?', s: ['Imagine the crystal at the centre of a large sphere.', 'Erect the perpendicular (face normal) on each face. Where it pierces the sphere lies the <b>face pole P</b>.', 'Join P to the south pole S; the intersection <b>P′</b> with the equatorial plane is the point in the stereogram (●). Poles of the lower hemisphere are projected towards the north pole (○).'],
     r: '<b>Rules of thumb:</b> pole at the centre = horizontal face; pole on the primitive circle = vertical face (e.g. a prism); the steeper the face, the further out its pole. Face size and shape do not matter – only the orientation. That is why the pole pattern shows the symmetry undistorted.',
+    m: '<b>Mirror planes as great circles:</b> every mirror plane passes through the centre of the crystal and cuts the sphere in a great circle. In the stereogram it appears as a diameter (plane contains c), as the primitive circle (plane ⊥ c, drawn thick and marked <i>m</i>) or as an arc between two opposite points of the primitive (inclined plane).',
     l: { P: 'pole', S: 'south pole', E: 'equatorial plane' } },
   fr: { t: 'Qu’est-ce qu’un pôle de face ?', s: ['On imagine le cristal au centre d’une grande sphère.', 'Sur chaque face, on élève la perpendiculaire (normale à la face). Là où elle perce la sphère se trouve le <b>pôle P</b> de la face.', 'On relie P au pôle sud S ; l’intersection <b>P′</b> avec le plan équatorial est le point du stéréogramme (●). Les pôles de l’hémisphère inférieur sont projetés vers le pôle nord (○).'],
     r: '<b>Repères :</b> pôle au centre = face horizontale ; pôle sur le cercle primitif = face verticale (p. ex. un prisme) ; plus la face est raide, plus son pôle est à l’extérieur. Taille et forme des faces n’interviennent pas – seule leur orientation compte. C’est pourquoi la figure des pôles montre la symétrie sans distorsion.',
+    m: '<b>Plans miroirs et grands cercles :</b> tout plan miroir passe par le centre du cristal et coupe la sphère selon un grand cercle. Dans le stéréogramme, celui-ci apparaît comme un diamètre (plan contenant c), comme le cercle primitif (plan ⊥ c, tracé épais et marqué <i>m</i>) ou comme un arc reliant deux points opposés du cercle primitif (plan incliné).',
     l: { P: 'pôle', S: 'pôle sud', E: 'plan équatorial' } },
   es: { t: '¿Qué es un polo de cara?', s: ['Se imagina el cristal en el centro de una gran esfera.', 'Sobre cada cara se levanta la perpendicular (normal a la cara). Donde atraviesa la esfera se encuentra el <b>polo P</b> de la cara.', 'Se une P con el polo sur S; la intersección <b>P′</b> con el plano ecuatorial es el punto del estereograma (●). Los polos del hemisferio inferior se proyectan hacia el polo norte (○).'],
     r: '<b>Reglas prácticas:</b> polo en el centro = cara horizontal; polo en el círculo primitivo = cara vertical (p. ej. un prisma); cuanto más inclinada la cara, más afuera su polo. El tamaño y la forma de las caras no importan, solo su orientación. Por eso el patrón de polos muestra la simetría sin distorsión.',
+    m: '<b>Planos de reflexión como círculos máximos:</b> todo plano de reflexión pasa por el centro del cristal y corta la esfera en un círculo máximo. En el estereograma aparece como un diámetro (plano que contiene c), como el círculo primitivo (plano ⊥ c, grueso y marcado con <i>m</i>) o como un arco entre dos puntos opuestos del círculo primitivo (plano inclinado).',
     l: { P: 'polo', S: 'polo sur', E: 'plano ecuatorial' } }
 };
 
@@ -1811,9 +1816,9 @@ if (false) module.exports = THUMB;
         <text x="128" y="206" font-size="13" font-style="italic" font-family="IBM Plex Serif, serif" fill="#1d2433">S</text>
         <text x="226" y="110" font-size="10.5" font-family="IBM Plex Sans, sans-serif" fill="#8a909c">${h.l.E}</text>
       </svg>
-      <ol>${h.s.map(x => `<li>${x}</li>`).join('')}</ol><div>${h.r}</div>`;
+      <ol>${h.s.map(x => `<li>${x}</li>`).join('')}</ol><div>${h.r}</div><div style="margin-top:8px">${h.m}</div>`;
   }
-  function renderStereoNote() { document.getElementById('stereoNote').innerHTML = t(followCb.checked ? 'stereoFollow' : 'stereoStd') + '<br>' + t('stereoLegend');  renderStereoHelp(); }
+  function renderStereoNote() { document.getElementById('stereoNote').innerHTML = t(followCb.checked ? 'stereoFollow' : 'stereoStd') + '<br>' + t('stereoLegend') + `<br><span style="display:inline-block;width:18px;height:3px;background:#e8960c;vertical-align:middle;margin-right:5px"></span>${t('stereoMirror')}`;  renderStereoHelp(); }
   function makeProj() {
     const M = crystalG.matrix.clone();
     if (followCb.checked) M.premultiply(new THREE.Matrix4().makeRotationFromQuaternion(root.quaternion));
@@ -1853,7 +1858,7 @@ if (false) module.exports = THUMB;
       if (f.kind !== 'mirror' || !state.famVis[fi]) return;
       f.members.forEach(e => {
         const n = P(T(e.dir)); if (!n) return;
-        if (Math.abs(n[2]) > 1 - 1e-6) { o += `<circle r="1" fill="none" stroke="#e8960c" stroke-width="0.03"/>`; return; }
+        if (Math.abs(n[2]) > 1 - 1e-6) { o += `<circle r="1" fill="none" stroke="#e8960c" stroke-width="0.03"/><text x="0.8" y="-0.8" font-size="0.13" font-style="italic" font-family="IBM Plex Serif, serif" fill="#b86f00" stroke="#fffdf8" stroke-width="0.025" paint-order="stroke">m</text>`; return; }
         const nv = new THREE.Vector3(...n), u = new THREE.Vector3().crossVectors(nv, new THREE.Vector3(0, 0, 1)).normalize();
         const w = new THREE.Vector3().crossVectors(nv, u); if (w.z < 0) w.negate();
         let d = '';
