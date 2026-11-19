@@ -39,9 +39,11 @@ header .spacer{flex:1}
 /* ---------- Galerie ---------- */
 #gallery{padding:8px 20px 6px}
 .systems{display:flex;flex-wrap:wrap;gap:10px}
-.sysbox{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:8px 8px 6px;flex:0 0 auto}
+.sysbox{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:8px 8px 6px;flex:0 1 auto;max-width:100%;min-width:0}
 .sysbox h3{margin:0 4px 6px;font:600 11px/1 "IBM Plex Sans";letter-spacing:.08em;text-transform:uppercase;color:var(--sys)}
-.cards{display:flex;gap:4px}
+.cards{display:flex;gap:4px;flex-wrap:wrap}
+#gallery.collapsed .cards{flex-wrap:nowrap}
+#gallery.collapsed .sysbox{flex:0 0 auto;max-width:none}
 .card{width:84px;border:1px solid transparent;background:transparent;border-radius:9px;padding:4px 2px 5px;cursor:pointer;text-align:center;transition:background .15s,border-color .15s}
 .card:hover{background:#f3f0e8}
 .card.active{background:#fff;border-color:var(--sys);box-shadow:0 0 0 2px color-mix(in srgb,var(--sys) 25%,transparent)}
