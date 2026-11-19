@@ -149,6 +149,17 @@ table.forms tr{cursor:help}
 .helpbox ol{margin:4px 0 6px;padding-left:18px}
 .helpbox li{margin:2px 0}
 footer{padding:0 24px 26px;color:var(--ink3);font-size:12px;max-width:1100px}
+.hctl{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.menubtn{display:none}
+@media (max-width:700px){
+  header{position:relative}
+  header h1{padding-right:44px;font-size:22px}
+  header p{font-size:14px}
+  .menubtn{display:flex;align-items:center;justify-content:center;position:absolute;right:12px;top:14px;width:38px;height:38px;border-radius:50%;border:1px solid var(--line);background:#fffdf8;font-size:22px;line-height:1;cursor:pointer;color:var(--ink)}
+  .hctl{display:none;position:absolute;right:12px;top:58px;z-index:60;background:#fffdf8;border:1px solid var(--line);border-radius:14px;padding:14px;flex-direction:column;align-items:stretch;gap:10px;box-shadow:0 10px 28px rgba(0,0,0,.14)}
+  .hctl.open{display:flex}
+  .hctl .ghost{text-align:left;padding:8px 14px}
+}
 @media (max-width:700px){.canvaswrap{height:min(60vh,110vw);min-height:300px;max-height:none}header{padding:16px 16px 4px}#gallery{padding:8px 10px 6px}#stage{padding:10px 10px 20px}}
 </style>
 </head>
@@ -159,9 +170,12 @@ footer{padding:0 24px 26px;color:var(--ink3);font-size:12px;max-width:1100px}
     <p data-i18n="subtitle"></p>
   </div>
   <div class="spacer"></div>
-  <div class="langs" id="langs"></div>
-  <button class="ghost" id="quizBtn" data-i18n="quiz"></button>
-  <button class="ghost" id="collapseBtn"></button>
+  <button class="menubtn" id="menuBtn" aria-label="Menu" aria-expanded="false">⋮</button>
+  <div class="hctl" id="hctl">
+    <div class="langs" id="langs"></div>
+    <button class="ghost" id="quizBtn" data-i18n="quiz"></button>
+    <button class="ghost" id="collapseBtn"></button>
+  </div>
 </header>
 
 <section id="gallery"><div class="systems" id="systems"></div></section>
@@ -1255,6 +1269,10 @@ if (false) module.exports = THUMB;
     applyStatic(); renderGallery();
     if (state.X) { renderClass(); renderElements(); renderForms(); renderStereoNote(); if (quiz.on) renderQuiz(); }
   }
+  const menuBtn = document.getElementById('menuBtn'), hctl = document.getElementById('hctl');
+  const setMenu = open => { hctl.classList.toggle('open', open); menuBtn.setAttribute('aria-expanded', open); };
+  menuBtn.onclick = e => { e.stopPropagation(); setMenu(!hctl.classList.contains('open')); };
+  document.addEventListener('click', e => { if (!hctl.classList.contains('open')) return; if (!hctl.contains(e.target) || e.target.closest('button')) setTimeout(() => setMenu(false), 120); });
   const quiz = { on: false, entry: null, attempts: 0, solved: false, revealed: false, score: 0, total: 0, wrong: new Set() };
 
   // ---------- Einträge ----------
