@@ -67,6 +67,7 @@ header .spacer{flex:1}
 .tb.on{background:var(--ink);color:#fff;border-color:var(--ink)}
 .tb .dot{width:9px;height:9px;border-radius:50%;display:inline-block}
 .tb:disabled{opacity:.35;cursor:default}
+.tb.on:disabled{background:#fff;color:var(--ink);border-color:var(--line)}
 .slider{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--ink2)}
 .slider input{width:90px;accent-color:var(--ink)}
 .canvaswrap{position:relative;flex:none;min-height:480px;height:calc(100vh - 120px);max-height:820px;background:radial-gradient(ellipse at 50% 38%,#fdfcf9 0%,#f1eee6 60%,#e6e2d7 100%);touch-action:none}
@@ -171,11 +172,12 @@ footer{padding:0 24px 26px;color:var(--ink3);font-size:12px;max-width:1100px}
         <button class="tb" data-kind="rotoinv"><span class="dot" style="background:#fff;border:2px solid var(--c4)"></span><span data-i18n="rotoinv"></span></button>
         <button class="tb" data-kind="mirror"><span class="dot" style="background:var(--cm)"></span><span data-i18n="mirror"></span></button>
         <button class="tb" data-kind="inv"><span class="dot" style="background:var(--ci)"></span><span data-i18n="inv"></span></button>
+        <button class="tb on" id="tLabels" data-i18n="labelsEl" style="margin-left:6px"></button>
       </div>
       <div class="tgroup"><span class="tlabel" data-i18n="view"></span>
         <button class="tb" id="tForms" data-i18n="forms"></button>
         <button class="tb" id="tAxes" data-i18n="axes"></button>
-        <button class="tb on" id="tLabels" data-i18n="labels"></button>
+        <button class="tb" id="tIdx" data-i18n="faceIdx"></button>
         <button class="tb" id="tSpin" data-i18n="spin"></button>
         <label class="slider"><span data-i18n="opacity"></span> <input type="range" id="opacity" min="0.15" max="1" step="0.01" value="0.55"></label>
       </div>
@@ -488,7 +490,8 @@ const I18N = (() => {
     view: L('Ansicht', 'View', 'Affichage', 'Vista'),
     forms: L('Formen färben', 'Colour by form', 'Colorer les formes', 'Colorear formas'),
     axes: L('Achsen a b c', 'Axes a b c', 'Axes a b c', 'Ejes a b c'),
-    labels: L('Beschriftung', 'Labels', 'Étiquettes', 'Etiquetas'),
+    labelsEl: L('Elemente beschriften', 'Label elements', 'Étiqueter les éléments', 'Etiquetar elementos'),
+    faceIdx: L('Flächenindizes', 'Face indices', 'Indices des faces', 'Índices de caras'),
     spin: L('Rotieren', 'Spin', 'Rotation', 'Girar'),
     opacity: L('Deckkraft', 'Opacity', 'Opacité', 'Opacidad'),
     std: L('Standard', 'Default', 'Standard', 'Estándar'),
@@ -1313,7 +1316,7 @@ if (false) module.exports = THUMB;
   new ResizeObserver(resize).observe(wrap);
 
   // ---------- Zustand ----------
-  const state = { entry: null, X: null, famVis: [], showForms: false, showAxes: false, labels: true, spin: false, opacity: 0.55, marked: -1, opIdx: {} };
+  const state = { entry: null, X: null, famVis: [], showForms: false, showAxes: false, labels: true, showIdx: false, spin: false, opacity: 0.55, marked: -1, opIdx: {} };
   let crystal = null; // {front, back, edgesFront, edgesBack, faces, edges, triFace}
   let famObjs = [];   // je Familie: Group
   let labelSprites = [];
@@ -1371,6 +1374,28 @@ if (false) module.exports = THUMB;
     const t = SYS_TINT[X.cls.system];
     return new THREE.Color(`rgb(${t.map(x => Math.round(255 - (255 - x) * 0.42)).join(',')})`);
   }
+  function indexSprite(v) {
+    const parts = ['('].concat(v.map(x => ({ d: String(Math.abs(x)), bar: x < 0 })), [')']);
+    const cv = document.createElement('canvas'), g = cv.getContext('2d'), H = 160, F = '500 100px "IBM Plex Mono", Menlo, monospace';
+    g.font = F;
+    const gap = Math.max(...v.map(Math.abs)) > 9 ? 28 : 6;
+    const ws = parts.map(p => g.measureText(typeof p === 'string' ? p : p.d).width);
+    const W = Math.ceil(ws.reduce((a, b) => a + b, 0) + gap * (v.length - 1) + 44);
+    cv.width = W; cv.height = H;
+    g.font = F; g.textBaseline = 'middle'; g.lineJoin = 'round';
+    let x = 22;
+    const draw = (txt, bar) => {
+      g.lineWidth = 18; g.strokeStyle = 'rgba(255,253,248,0.85)'; g.strokeText(txt, x, 94);
+      g.fillStyle = '#1d2433'; g.fillText(txt, x, 94);
+      const w = g.measureText(txt).width;
+      if (bar) { g.fillStyle = 'rgba(255,253,248,0.85)'; g.fillRect(x - 4, 22, w + 8, 20); g.fillStyle = '#1d2433'; g.fillRect(x + 4, 28, w - 8, 8); }
+      x += w;
+    };
+    parts.forEach((p, i) => { if (typeof p === 'string') draw(p, false); else { draw(p.d, p.bar); if (i < v.length) x += gap; } });
+    const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: (() => { const tx = new THREE.CanvasTexture(cv); tx.anisotropy = 4; return tx; })(), depthTest: false, transparent: true }));
+    const h = 0.1; sp.scale.set(h * W / H, h, 1); sp.renderOrder = 11;
+    return sp;
+  }
   function buildCrystal() {
     disposeGroup(crystalG); disposeGroup(ghostG);
     const X = state.X, P = X.poly;
@@ -1409,7 +1434,16 @@ if (false) module.exports = THUMB;
     const markGeo = new THREE.BufferGeometry();
     const mark = new THREE.Mesh(markGeo, new THREE.MeshBasicMaterial({ color: 0xffcc33, transparent: true, opacity: 0.85, side: THREE.DoubleSide, depthWrite: false }));
     mark.renderOrder = 6; mark.visible = false; crystalG.add(mark);
-    crystal = { front, back, eF, eB, edges, triFace, mark };
+    // Flächenindizes
+    const idxG = new THREE.Group(); crystalG.add(idxG);
+    const totA = P.faces.reduce((a, f) => a + f.area, 0);
+    const idxSprites = P.faces.map(f => {
+      if (f.area / totA < 0.005) return null;
+      const sp = indexSprite(planeIdx(X, f.hkl));
+      sp.position.copy(T(f.centroid)).add(T(f.n).multiplyScalar(0.02));
+      sp.visible = false; idxG.add(sp); return sp;
+    });
+    crystal = { front, back, eF, eB, edges, triFace, mark, idxSprites };
     // Geist (für Operationen)
     const gp = [];
     edges.forEach(e => { const a = T(P.verts[e.a]), b = T(P.verts[e.b]); gp.push(a.x, a.y, a.z, b.x, b.y, b.z); });
@@ -1647,6 +1681,8 @@ if (false) module.exports = THUMB;
       arr.setXYZ(2 * k, a.x, a.y, a.z); arr.setXYZ(2 * k + 1, b.x, b.y, b.z);
     });
     crystal.eF.geometry.setDrawRange(0, fi * 2); crystal.eB.geometry.setDrawRange(0, bi * 2);
+    const showIdx = state.showIdx && !opAnim && !(quiz.on && !quiz.solved);
+    crystal.idxSprites.forEach((sp, i) => { if (sp) sp.visible = showIdx && front[i]; });
     fa.needsUpdate = true; ba.needsUpdate = true;
   }
 
@@ -1688,6 +1724,8 @@ if (false) module.exports = THUMB;
       b.disabled = idx.length === 0;
       b.classList.toggle('on', idx.length > 0 && idx.every(i => state.famVis[i]));
     });
+    const lb = document.getElementById('tLabels');
+    lb.disabled = !state.famVis.some(Boolean) || fams.every(f => f.kind === 'mirror');
   }
   document.querySelectorAll('[data-kind]').forEach(b => b.onclick = () => {
     const k = b.dataset.kind, fams = state.X.sym.fams;
@@ -1699,6 +1737,7 @@ if (false) module.exports = THUMB;
   tgl('tForms', 'showForms', () => { buildCrystal(); renderForms(); stereoDirty = true; });
   tgl('tAxes', 'showAxes', () => { axesG.visible = state.showAxes; stereoDirty = true; });
   tgl('tLabels', 'labels', () => labelSprites.forEach(s => s.visible = state.labels));
+  tgl('tIdx', 'showIdx');
   tgl('tSpin', 'spin');
   document.getElementById('opacity').oninput = e => { state.opacity = +e.target.value; [crystal.front, crystal.back].forEach(m => { m.material.opacity = state.opacity; }); };
 
@@ -1964,6 +2003,8 @@ if (false) module.exports = THUMB;
     syncKindButtons();
     if (hide) document.querySelectorAll('[data-kind]').forEach(b => { b.disabled = true; b.classList.remove('on'); });
     document.getElementById('tAxes').disabled = hide;
+    document.getElementById('tIdx').disabled = hide;
+    if (hide) document.getElementById('tLabels').disabled = true;
     axesG.visible = state.showAxes && !hide;
     document.querySelectorAll('[data-look]').forEach(b => b.hidden = hide);
     renderClass(); stereoDirty = true;
