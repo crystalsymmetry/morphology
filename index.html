@@ -59,6 +59,7 @@ header .spacer{flex:1}
 #stage{display:grid;grid-template-columns:minmax(0,1fr) 360px;gap:14px;padding:10px 20px 24px;align-items:start}
 .viewer{position:sticky;top:10px}
 @media (max-width:1000px){.viewer{position:static}}
+@media (max-width:700px){.canvaswrap{height:min(78vh,115vw);min-height:360px}header{padding:16px 16px 4px}#gallery{padding:8px 10px 6px}#stage{padding:10px 10px 20px}}
 @media (max-width:1000px){#stage{grid-template-columns:1fr}}
 .viewer{background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden;display:flex;flex-direction:column;min-height:560px}
 .toolbar{display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center;padding:10px 12px;border-bottom:1px solid var(--line)}
@@ -507,6 +508,8 @@ const I18N = (() => {
       'Arrastrar: girar · Rueda: zoom · Clic en una cara: marcarla · ← → cambiar de clase'),
     hintQuiz: L('Ziehen: drehen · Mausrad: zoomen · Klick auf Fläche: markieren', 'Drag: rotate · Wheel: zoom · Click a face: mark it',
       'Glisser : tourner · Molette : zoomer · Clic sur une face : la marquer', 'Arrastrar: girar · Rueda: zoom · Clic en una cara: marcarla'),
+    hintT: L('Wischen: drehen · Zwei Finger: zoomen · Tippen auf Fläche: markieren', 'Swipe: rotate · Pinch: zoom · Tap a face: mark it', 'Glisser : tourner · Pincer : zoomer · Toucher une face : la marquer', 'Deslizar: girar · Pellizcar: zoom · Tocar una cara: marcarla'),
+    hintQuizT: L('Wischen: drehen · Zwei Finger: zoomen · Tippen auf Fläche: markieren', 'Swipe: rotate · Pinch: zoom · Tap a face: mark it', 'Glisser : tourner · Pincer : zoomer · Toucher une face : la marquer', 'Deslizar: girar · Pellizcar: zoom · Tocar una cara: marcarla'),
     symElems: L('Symmetrieelemente', 'Symmetry elements', 'Éléments de symétrie', 'Elementos de simetría'),
     formsTitle: L('Formen', 'Forms', 'Formes', 'Formas'),
     opHint: L('▶ führt die Operation aus – eine markierte Fläche wandert dabei auf eine äquivalente Fläche.',
@@ -1220,6 +1223,7 @@ if (false) module.exports = THUMB;
   const idxHTML = v => v.map(num).join(Math.max(...v.map(Math.abs)) > 9 ? ' ' : '');
   const planeIdx = (X, h) => X.hex ? CORE.toHexPlane(h) : h;
 
+  const TOUCH = !!(window.matchMedia && matchMedia('(pointer: coarse)').matches);
   // ---------- Sprache ----------
   let LANG = (() => {
     try { const s = localStorage.getItem('kk-lang'); if (I18N.LANGS.includes(s)) return s; } catch (_) {}
@@ -1240,7 +1244,7 @@ if (false) module.exports = THUMB;
     document.title = t('title');
     const g = document.getElementById('gallery');
     document.getElementById('collapseBtn').textContent = t(g.classList.contains('collapsed') ? 'expand' : 'collapse');
-    document.getElementById('hint').textContent = t(quiz.on ? 'hintQuiz' : 'hint');
+    document.getElementById('hint').textContent = t((quiz.on ? 'hintQuiz' : 'hint') + (TOUCH ? 'T' : ''));
     document.getElementById('quizBtn').textContent = t(quiz.on ? 'endQuiz' : 'quiz');
     document.getElementById('quizBtn').classList.toggle('on', quiz.on);
     document.getElementById('langs').innerHTML = I18N.LANGS.map(l => `<button data-l="${l}" class="${l === LANG ? 'on' : ''}">${l.toUpperCase()}</button>`).join('');
@@ -1559,9 +1563,20 @@ if (false) module.exports = THUMB;
 
   // Ziehen
   const cv = renderer.domElement;
-  let drag = null, moved = false;
-  cv.addEventListener('pointerdown', e => { drag = { x: e.clientX, y: e.clientY }; moved = false; cv.setPointerCapture(e.pointerId); });
+  let drag = null, moved = false, pinch = null;
+  const ptrs = new Map();
+  const pinchDist = () => { const p = [...ptrs.values()]; return Math.hypot(p[0].x - p[1].x, p[0].y - p[1].y); };
+  cv.addEventListener('pointerdown', e => {
+    ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY }); cv.setPointerCapture(e.pointerId);
+    if (ptrs.size === 2) { pinch = { d: pinchDist(), cd: camDist }; drag = null; moved = true; return; }
+    drag = { x: e.clientX, y: e.clientY }; moved = false;
+  });
   cv.addEventListener('pointermove', e => {
+    if (ptrs.has(e.pointerId)) ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (pinch && ptrs.size >= 2) {
+      const d = pinchDist(); if (d > 10) camDist = Math.min(14, Math.max(3.2, pinch.cd * pinch.d / d));
+      hideTip(); return;
+    }
     if (drag) {
       const dx = e.clientX - drag.x, dy = e.clientY - drag.y;
       if (Math.abs(dx) + Math.abs(dy) > 2) moved = true;
@@ -1570,9 +1585,16 @@ if (false) module.exports = THUMB;
         if (ang > 0) { const q = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(dy, dx, 0).normalize(), ang); root.quaternion.premultiply(q); viewAnim = null; }
         drag.x = e.clientX; drag.y = e.clientY; hideTip();
       }
-    } else hover(e);
+    } else if (e.pointerType === 'mouse') hover(e);
   });
-  cv.addEventListener('pointerup', e => { if (drag && !moved) clickFace(e); drag = null; });
+  const endPtr = e => {
+    ptrs.delete(e.pointerId);
+    if (pinch) { if (ptrs.size < 2) pinch = null; drag = null; return; }
+    if (e.type === 'pointerup' && drag && !moved) clickFace(e);
+    drag = null;
+  };
+  cv.addEventListener('pointerup', endPtr);
+  cv.addEventListener('pointercancel', endPtr);
   cv.addEventListener('pointerleave', hideTip);
   cv.addEventListener('wheel', e => { e.preventDefault(); camDist = Math.min(14, Math.max(3.2, camDist * (1 + Math.sign(e.deltaY) * 0.08))); }, { passive: false });
 
@@ -1702,7 +1724,8 @@ if (false) module.exports = THUMB;
       crystalG.matrix.copy(opMatrix(opAnim.e, t, opAnim.mode)); crystalG.matrixWorldNeedsUpdate = true;
       if (t >= 1) finishOp();
     }
-    camera.position.z += (camDist - camera.position.z) * 0.2;
+    const fitDist = camDist * Math.max(1, 1.1 / Math.max(0.3, camera.aspect));
+    camera.position.z += (fitDist - camera.position.z) * 0.2;
     if (stereoDirty || opAnim || (followCb.checked && !root.quaternion.equals(lastQ))) { drawStereo(); stereoDirty = false; lastQ.copy(root.quaternion); }
     scene.updateMatrixWorld();
     updateEdges();
