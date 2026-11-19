@@ -1,0 +1,1994 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Die 32 Kristallklassen in 3D</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,500;1,600&family=IBM+Plex+Serif:ital,wght@0,500;1,400&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#f4f2ec; --card:#fffdf8; --ink:#1d2433; --ink2:#4a5263; --ink3:#8a909c; --line:#dcd8cd;
+  --accent:#2f5fb3; --mark:#ffcc33;
+  --c2:#2f6fde; --c3:#1f9d55; --c4:#d6453d; --c6:#8e44c9; --cm:#e8960c; --ci:#222;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--paper);color:var(--ink);font:14px/1.45 "IBM Plex Sans",system-ui,sans-serif}
+button{font:inherit;color:inherit}
+.ob{ text-decoration:none; position:relative; display:inline-block }
+.ob::before{content:"";position:absolute;left:8%;right:8%;top:.08em;border-top:1.5px solid currentColor}
+.mono{font-family:"IBM Plex Mono",monospace}
+
+header{padding:22px 28px 6px;display:flex;align-items:flex-end;gap:24px;flex-wrap:wrap}
+header h1{margin:0;font:500 26px/1.1 "IBM Plex Serif",serif;letter-spacing:-.01em}
+header p{margin:4px 0 0;color:var(--ink2);font:italic 15px "IBM Plex Serif",serif}
+header .spacer{flex:1}
+.ghost{border:1px solid var(--line);background:transparent;border-radius:999px;padding:5px 12px;cursor:pointer;color:var(--ink2);font-size:13px}
+.ghost:hover{background:#fff;color:var(--ink)}
+
+/* ---------- Galerie ---------- */
+#gallery{padding:8px 20px 6px}
+.systems{display:flex;flex-wrap:wrap;gap:10px}
+.sysbox{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:8px 8px 6px;flex:0 0 auto}
+.sysbox h3{margin:0 4px 6px;font:600 11px/1 "IBM Plex Sans";letter-spacing:.08em;text-transform:uppercase;color:var(--sys)}
+.cards{display:flex;gap:4px}
+.card{width:84px;border:1px solid transparent;background:transparent;border-radius:9px;padding:4px 2px 5px;cursor:pointer;text-align:center;transition:background .15s,border-color .15s}
+.card:hover{background:#f3f0e8}
+.card.active{background:#fff;border-color:var(--sys);box-shadow:0 0 0 2px color-mix(in srgb,var(--sys) 25%,transparent)}
+.card svg{display:block;margin:0 auto;width:62px;height:62px}
+.card .hm{font:500 15px/1.2 "IBM Plex Serif",serif;margin-top:2px}
+.card .mn{font-size:10.5px;line-height:1.2;color:var(--ink3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#gallery.collapsed .systems{flex-wrap:nowrap;overflow-x:auto;padding-bottom:6px}
+#gallery.collapsed .card .mn{display:none}
+#gallery.collapsed .card svg{width:48px;height:48px}
+#gallery.collapsed .card{width:64px}
+
+/* ---------- Bühne ---------- */
+#stage{display:grid;grid-template-columns:minmax(0,1fr) 360px;gap:14px;padding:10px 20px 24px;align-items:start}
+.viewer{position:sticky;top:10px}
+@media (max-width:1000px){.viewer{position:static}}
+@media (max-width:1000px){#stage{grid-template-columns:1fr}}
+.viewer{background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden;display:flex;flex-direction:column;min-height:560px}
+.toolbar{display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center;padding:10px 12px;border-bottom:1px solid var(--line)}
+.tgroup{display:flex;gap:4px;align-items:center;flex-wrap:wrap}
+.tlabel{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink3);margin-right:2px}
+.tb{border:1px solid var(--line);background:#fff;border-radius:7px;padding:4px 9px;cursor:pointer;font-size:13px;display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+.tb:hover{border-color:#b9b4a6}
+.tb.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+.tb .dot{width:9px;height:9px;border-radius:50%;display:inline-block}
+.tb:disabled{opacity:.35;cursor:default}
+.slider{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--ink2)}
+.slider input{width:90px;accent-color:var(--ink)}
+.canvaswrap{position:relative;flex:none;min-height:480px;height:calc(100vh - 120px);max-height:820px;background:radial-gradient(ellipse at 50% 38%,#fdfcf9 0%,#f1eee6 60%,#e6e2d7 100%);touch-action:none}
+.canvaswrap canvas{display:block;width:100%;height:100%;cursor:grab}
+.canvaswrap canvas:active{cursor:grabbing}
+.hint{position:absolute;left:12px;bottom:10px;font-size:12px;color:var(--ink3);pointer-events:none}
+.bigsym{position:absolute;left:16px;top:12px;pointer-events:none}
+.bigsym .s{font:500 34px/1 "IBM Plex Serif",serif}
+.bigsym .n{font-size:13px;color:var(--ink2);margin-top:4px}
+.viewbtns{position:absolute;right:10px;top:10px;display:flex;flex-direction:column;gap:4px}
+.viewbtns .tb{justify-content:center;font-size:12px;padding:3px 8px;background:rgba(255,255,255,.85)}
+#tip{position:absolute;pointer-events:none;background:rgba(29,36,51,.92);color:#fff;padding:5px 9px;border-radius:7px;font-size:12.5px;display:none;white-space:nowrap;transform:translate(12px,12px)}
+#opmsg{position:absolute;left:50%;bottom:14px;transform:translateX(-50%);background:var(--ink);color:#fff;border-radius:999px;padding:6px 14px;font-size:13px;opacity:0;transition:opacity .25s;pointer-events:none}
+#opmsg.show{opacity:.92}
+
+/* ---------- Info ---------- */
+aside{display:flex;flex-direction:column;gap:12px}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 16px}
+.panel h2{margin:0 0 2px;font:500 22px/1.2 "IBM Plex Serif",serif}
+.panel h4{margin:0 0 8px;font:600 11px/1 "IBM Plex Sans";letter-spacing:.08em;text-transform:uppercase;color:var(--ink3)}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:3px 12px;font-size:13px;margin-top:10px}
+.kv dt{color:var(--ink3)} .kv dd{margin:0}
+.chips{display:flex;flex-wrap:wrap;gap:5px;margin-top:10px}
+.chip{font-size:11.5px;padding:2px 8px;border-radius:999px;border:1px solid var(--line);color:var(--ink2)}
+.chip.yes{background:#eef3fb;border-color:#c9d7ef;color:#25467f}
+.ex{font-size:13px;color:var(--ink2);margin-top:6px}
+.ex b{color:var(--ink);font-weight:600}
+table.forms{width:100%;border-collapse:collapse;font-size:13px}
+table.forms td{padding:4px 4px;border-top:1px solid #eeeae0;vertical-align:middle}
+table.forms tr:first-child td{border-top:none}
+table.forms tr.hl td{background:#fff6d6}
+.sw{width:12px;height:12px;border-radius:3px;display:inline-block;border:1px solid rgba(0,0,0,.2)}
+.elist{display:flex;flex-direction:column;gap:2px}
+.erow{display:grid;grid-template-columns:22px 34px 1fr auto auto;align-items:center;gap:6px;padding:4px 2px;border-top:1px solid #eeeae0;font-size:13px}
+.erow:first-child{border-top:none}
+.erow input{margin:0;accent-color:var(--ink)}
+.erow .glyph{width:30px;height:22px}
+.erow .ib{border:1px solid var(--line);background:#fff;border-radius:6px;padding:2px 7px;cursor:pointer;font-size:12px}
+.erow .ib:hover{border-color:#b9b4a6}
+.muted{color:var(--ink3);font-size:12px}
+
+.langs{display:flex;border:1px solid var(--line);border-radius:999px;overflow:hidden}
+.langs button{border:none;background:transparent;padding:5px 10px;cursor:pointer;font-size:12.5px;color:var(--ink2);letter-spacing:.04em}
+.langs button.on{background:var(--ink);color:#fff}
+.ghost.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+.phead{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;flex-wrap:wrap;gap:4px 10px}
+.phead h4,.follow{white-space:nowrap}
+.phead h4{margin:0}
+.follow{font-size:12px;color:var(--ink2);display:flex;align-items:center;gap:5px;cursor:pointer}
+.follow input{accent-color:var(--ink);margin:0}
+#stereo{width:100%;aspect-ratio:1;display:block;margin:2px 0 6px;user-select:none}
+#stereo .pole{cursor:pointer}
+[hidden]{display:none!important}
+#pQuiz h2{margin-bottom:6px}
+.qgrid{display:flex;flex-direction:column;gap:6px;margin-top:12px}
+.qrow{display:flex;align-items:center;gap:4px;flex-wrap:wrap}
+.qrow .qs{width:100%;font-size:10.5px;letter-spacing:.07em;text-transform:uppercase;color:var(--sys)}
+.qb{border:1px solid var(--line);background:#fff;border-radius:7px;padding:3px 0;width:52px;cursor:pointer;font:500 14px "IBM Plex Serif",serif}
+.qb:hover{border-color:var(--sys)}
+.qb.wrong{background:#fbe3e1;border-color:#e0a49e;color:#9b3a30}
+.qb.right{background:#dff3e6;border-color:#8cc9a2;color:#1f6b3d}
+.qfb{min-height:22px;margin-top:10px;font-size:13.5px}
+.qfb.ok{color:#1f6b3d;font-weight:600}.qfb.no{color:#9b3a30}
+.qact{display:flex;gap:6px;margin-top:10px;align-items:center}
+.qact .tb.primary{background:var(--ink);color:#fff;border-color:var(--ink)}
+.qscore{margin-left:auto;font-size:12px;color:var(--ink3)}
+body.quiz #gallery{display:none}
+#ftip{position:fixed;z-index:50;max-width:330px;background:var(--ink);color:#f4f2ec;border-radius:10px;padding:10px 13px;font-size:13px;line-height:1.45;box-shadow:0 8px 24px rgba(0,0,0,.18);pointer-events:none;display:none}
+#ftip b{color:#fff}
+#ftip .k{color:#aab3c5;font-size:12px;margin-top:6px}
+table.forms tr{cursor:help}
+.qhelp{width:18px;height:18px;border-radius:50%;border:1px solid var(--ink3);background:#fff;color:var(--ink2);font:600 11px/1 "IBM Plex Sans";cursor:pointer;padding:0;letter-spacing:0;text-transform:none}
+.qhelp.on,.qhelp:hover{background:var(--ink);color:#fff;border-color:var(--ink)}
+.helpbox{background:#f6f3ea;border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin:4px 0 10px;font-size:12.5px;line-height:1.5;color:var(--ink2)}
+.helpbox b{color:var(--ink)}
+.helpbox svg{width:100%;display:block;margin:4px 0 6px}
+.helpbox ol{margin:4px 0 6px;padding-left:18px}
+.helpbox li{margin:2px 0}
+footer{padding:0 24px 26px;color:var(--ink3);font-size:12px;max-width:1100px}
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <h1 data-i18n="title"></h1>
+    <p data-i18n="subtitle"></p>
+  </div>
+  <div class="spacer"></div>
+  <div class="langs" id="langs"></div>
+  <button class="ghost" id="quizBtn" data-i18n="quiz"></button>
+  <button class="ghost" id="collapseBtn"></button>
+</header>
+
+<section id="gallery"><div class="systems" id="systems"></div></section>
+
+<section id="stage">
+  <div class="viewer">
+    <div class="toolbar">
+      <div class="tgroup"><span class="tlabel" data-i18n="sym"></span>
+        <button class="tb" data-kind="all"><span data-i18n="all"></span></button>
+        <button class="tb" data-kind="rot"><span class="dot" style="background:var(--c4)"></span><span data-i18n="rot"></span></button>
+        <button class="tb" data-kind="rotoinv"><span class="dot" style="background:#fff;border:2px solid var(--c4)"></span><span data-i18n="rotoinv"></span></button>
+        <button class="tb" data-kind="mirror"><span class="dot" style="background:var(--cm)"></span><span data-i18n="mirror"></span></button>
+        <button class="tb" data-kind="inv"><span class="dot" style="background:var(--ci)"></span><span data-i18n="inv"></span></button>
+      </div>
+      <div class="tgroup"><span class="tlabel" data-i18n="view"></span>
+        <button class="tb" id="tForms" data-i18n="forms"></button>
+        <button class="tb" id="tAxes" data-i18n="axes"></button>
+        <button class="tb on" id="tLabels" data-i18n="labels"></button>
+        <button class="tb" id="tSpin" data-i18n="spin"></button>
+        <label class="slider"><span data-i18n="opacity"></span> <input type="range" id="opacity" min="0.15" max="1" step="0.01" value="0.55"></label>
+      </div>
+    </div>
+    <div class="canvaswrap" id="wrap">
+      <div class="bigsym"><div class="s" id="bigS"></div><div class="n" id="bigN"></div></div>
+      <div class="viewbtns">
+        <button class="tb" id="vReset" data-i18n="std" data-i18n-title="stdTitle"></button>
+        <button class="tb" data-look="a" data-i18n-title="alongA">‖ a</button>
+        <button class="tb" data-look="b" data-i18n-title="alongB">‖ b</button>
+        <button class="tb" data-look="c" data-i18n-title="alongC">‖ c</button>
+      </div>
+      <div class="hint" id="hint"></div>
+      <div id="tip"></div>
+      <div id="opmsg"></div>
+    </div>
+  </div>
+  <aside>
+    <div class="panel" id="pQuiz" hidden></div>
+    <div class="panel" id="pClass"></div>
+    <div class="panel" id="pElems"><h4 data-i18n="symElems"></h4><div class="elist" id="elist"></div>
+      <div class="muted" style="margin-top:8px" data-i18n="opHint"></div></div>
+    <div class="panel" id="pStereo">
+      <div class="phead"><h4 style="display:flex;align-items:center;gap:7px"><span data-i18n="stereo"></span><button class="qhelp" id="stereoHelpBtn" aria-label="?">?</button></h4><label class="follow"><input type="checkbox" id="followView"> <span data-i18n="follow"></span></label></div>
+      <div id="stereoHelp" class="helpbox" hidden></div>
+      <svg id="stereo" viewBox="-1.18 -1.18 2.36 2.36"></svg>
+      <div class="muted" id="stereoNote"></div>
+    </div>
+    <div class="panel" id="pForms"><h4 data-i18n="formsTitle"></h4><table class="forms" id="ftable"></table></div>
+  </aside>
+</section>
+<footer data-i18n="footer"></footer>
+<div id="ftip"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+const KK_DEFAULT_LANG = 'en';
+// ===== Die 32 Kristallklassen mit Beispielkristallen =====
+// gens: Erzeugende im ITA-Stil (direkter Raum, Standardaufstellung)
+// forms: hkl (bei trigonal/hexagonal 3-indizig h k l, Anzeige als h k i l), d = relativer Zentralabstand
+const HEXL = (a, c) => [a, a, c, 90, 90, 120];
+const TETL = (a, c) => [a, a, c, 90, 90, 90];
+const CUBL = [1, 1, 1, 90, 90, 90];
+
+const CLASSES = [
+  // ---------------- triklin ----------------
+  { id: '1', hm: '1', full: '1', sch: 'C<sub>1</sub>', name: 'triklin-pedial', system: 'triklin', gens: [],
+    examples: [{ name: 'Idealisiert (z. B. Parahilgardit)', note: '',
+      lat: [7.0, 8.0, 6.5, 100, 105, 80],
+      forms: [
+        { hkl: [1, 0, 0], d: 0.9, name: 'Pedion' }, { hkl: [-1, 0, 0], d: 1.15, name: 'Pedion' },
+        { hkl: [0, 1, 0], d: 1.0, name: 'Pedion' }, { hkl: [0, -1, 0], d: 1.3, name: 'Pedion' },
+        { hkl: [0, 0, 1], d: 1.05, name: 'Pedion' }, { hkl: [0, 0, -1], d: 0.95, name: 'Pedion' },
+        { hkl: [1, 1, 0], d: 1.2, name: 'Pedion' }, { hkl: [-1, 1, 1], d: 1.3, name: 'Pedion' },
+        { hkl: [1, -1, -1], d: 1.25, name: 'Pedion' }]
+    }] },
+  { id: '-1', hm: '-1', full: '-1', sch: 'C<sub>i</sub>', name: 'triklin-pinakoidal', system: 'triklin', gens: ['-x,-y,-z'],
+    examples: [{ name: 'Chalkanthit', formula: 'CuSO<sub>4</sub>·5H<sub>2</sub>O', note: 'Kupfervitriol; alle Formen sind Pinakoide (Flächenpaare).',
+      lat: [6.12, 10.69, 5.96, 97.6, 107.2, 77.5],
+      forms: [
+        { hkl: [1, 0, 0], d: 1.0, name: 'Pinakoid' }, { hkl: [0, 1, 0], d: 1.25, name: 'Pinakoid' },
+        { hkl: [0, 0, 1], d: 1.0, name: 'Pinakoid' }, { hkl: [1, 1, 0], d: 1.3, name: 'Pinakoid' },
+        { hkl: [1, -1, 0], d: 1.2, name: 'Pinakoid' }, { hkl: [1, 1, -1], d: 1.35, name: 'Pinakoid' }]
+    }] },
+  // ---------------- monoklin ----------------
+  { id: '2', hm: '2', full: '121', sch: 'C<sub>2</sub>', name: 'monoklin-sphenoidisch', system: 'monoklin', gens: ['-x,y,-z'],
+    examples: [{ name: 'Saccharose', formula: 'C<sub>12</sub>H<sub>22</sub>O<sub>11</sub>', note: 'Rohrzucker; polare b-Achse – die beiden Enden sind verschieden ausgebildet.',
+      lat: [10.86, 8.70, 7.76, 90, 102.9, 90],
+      forms: [
+        { hkl: [1, 0, 0], d: 1.0, name: 'Pinakoid' }, { hkl: [0, 0, 1], d: 1.1, name: 'Pinakoid' },
+        { hkl: [1, 1, 0], d: 1.25, name: 'Sphenoid' }, { hkl: [1, -1, 0], d: 1.12, name: 'Sphenoid' },
+        { hkl: [0, 1, 0], d: 1.35, name: 'Pedion' }, { hkl: [0, 1, 1], d: 1.35, name: 'Sphenoid' }, { hkl: [1, 0, -1], d: 1.35, name: 'Pinakoid' }]
+    }] },
+  { id: 'm', hm: 'm', full: '1m1', sch: 'C<sub>s</sub>', name: 'monoklin-domatisch', system: 'monoklin', gens: ['x,-y,z'],
+    examples: [{ name: 'Skolezit', formula: 'CaAl<sub>2</sub>Si<sub>3</sub>O<sub>10</sub>·3H<sub>2</sub>O', note: 'Zeolith; nur eine Spiegelebene, die c-Achse ist polar.',
+      lat: [6.52, 18.96, 9.76, 90, 110.1, 90],
+      forms: [
+        { hkl: [0, 1, 0], d: 1.0, name: 'Pinakoid' }, { hkl: [1, 1, 0], d: 0.9, name: 'Doma' }, { hkl: [-1, 1, 0], d: 0.95, name: 'Doma' },
+        { hkl: [1, 1, 1], d: 1.35, name: 'Doma' }, { hkl: [-1, 1, 1], d: 1.3, name: 'Doma' },
+        { hkl: [0, 0, -1], d: 1.25, name: 'Pedion' }, { hkl: [1, 1, -1], d: 1.3, name: 'Doma' }]
+    }] },
+  { id: '2/m', hm: '2/m', full: '1 2/m 1', sch: 'C<sub>2h</sub>', name: 'monoklin-prismatisch', system: 'monoklin', gens: ['-x,y,-z', '-x,-y,-z'],
+    examples: [
+      { name: 'Orthoklas', formula: 'KAlSi<sub>3</sub>O<sub>8</sub>', note: 'Kalifeldspat, typische Tracht mit M{010}, T{110}, P{001} und y{-201}.',
+        lat: [8.56, 12.96, 7.21, 90, 116.0, 90],
+        forms: [{ hkl: [0, 1, 0], d: 1.0, name: 'Pinakoid' }, { hkl: [1, 1, 0], d: 1.15, name: 'Prisma' },
+          { hkl: [0, 0, 1], d: 1.3, name: 'Pinakoid' }, { hkl: [-2, 0, 1], d: 1.3, name: 'Pinakoid' }] },
+      { name: 'Gips', view: [62, 15], formula: 'CaSO<sub>4</sub>·2H<sub>2</sub>O', note: 'Tafelig nach {010}, mit Prisma {120} und Prisma {-111}.',
+        lat: [6.28, 15.20, 5.67, 90, 114.1, 90],
+        forms: [{ hkl: [0, 1, 0], d: 0.62, name: 'Pinakoid' }, { hkl: [1, 2, 0], d: 1.0, name: 'Prisma' },
+          { hkl: [-1, 1, 1], d: 1.6, name: 'Prisma' }] }
+    ] },
+  // ---------------- orthorhombisch ----------------
+  { id: '222', hm: '222', full: '222', sch: 'D<sub>2</sub>', name: 'rhombisch-disphenoidisch', system: 'orthorhombisch', gens: ['-x,-y,z', '-x,y,-z'],
+    examples: [{ name: 'Epsomit', formula: 'MgSO<sub>4</sub>·7H<sub>2</sub>O', note: 'Bittersalz; Prisma {110} mit rhombischem Disphenoid {111}.',
+      lat: [11.86, 11.99, 6.86, 90, 90, 90],
+      forms: [{ hkl: [1, 1, 0], d: 1.0, name: 'rhomb. Prisma' }, { hkl: [1, 1, 1], d: 1.2, name: 'rhomb. Disphenoid' },
+        { hkl: [1, -1, 1], d: 1.45, name: 'rhomb. Disphenoid' }]
+    }] },
+  { id: 'mm2', hm: 'mm2', full: 'mm2', sch: 'C<sub>2v</sub>', name: 'rhombisch-pyramidal', system: 'orthorhombisch', gens: ['-x,-y,z', 'x,-y,z'],
+    examples: [{ name: 'Hemimorphit', formula: 'Zn<sub>4</sub>Si<sub>2</sub>O<sub>7</sub>(OH)<sub>2</sub>·H<sub>2</sub>O', note: 'Namensgeber der Hemimorphie: oben Domen und Pedion, unten Pyramide.',
+      lat: [8.37, 10.73, 5.11, 90, 90, 90],
+      forms: [{ hkl: [0, 1, 0], d: 0.75, name: 'Pinakoid' }, { hkl: [1, 1, 0], d: 1.0, name: 'rhomb. Prisma' },
+        { hkl: [0, 0, 1], d: 1.25, name: 'Pedion' }, { hkl: [0, 3, 1], d: 1.15, name: 'Doma' }, { hkl: [3, 0, 1], d: 1.3, name: 'Doma' },
+        { hkl: [1, 2, -1], d: 1.25, name: 'rhomb. Pyramide' }]
+    }] },
+  { id: 'mmm', hm: 'mmm', full: '2/m 2/m 2/m', sch: 'D<sub>2h</sub>', name: 'rhombisch-dipyramidal', system: 'orthorhombisch', gens: ['-x,-y,z', '-x,y,-z', '-x,-y,-z'],
+    examples: [
+      { name: 'Schwefel (α)', formula: 'S<sub>8</sub>', note: 'Rhombische Dipyramide {111} mit {113} und Pinakoid {001}.',
+        lat: [10.47, 12.87, 24.49, 90, 90, 90],
+        forms: [{ hkl: [1, 1, 1], d: 1.0, name: 'rhomb. Dipyramide' }, { hkl: [1, 1, 3], d: 1.0, name: 'rhomb. Dipyramide' },
+          { hkl: [0, 0, 1], d: 0.92, name: 'Pinakoid' }, { hkl: [0, 1, 1], d: 1.05, name: 'rhomb. Prisma' }] },
+      { name: 'Topas', formula: 'Al<sub>2</sub>SiO<sub>4</sub>(F,OH)<sub>2</sub>', note: 'Prismen {110}, {120} mit Dipyramide {111}, Prisma {021} und Pinakoid {001}.',
+        lat: [4.65, 8.80, 8.39, 90, 90, 90],
+        forms: [{ hkl: [1, 1, 0], d: 0.85, name: 'rhomb. Prisma' }, { hkl: [1, 2, 0], d: 0.85, name: 'rhomb. Prisma' },
+          { hkl: [1, 1, 1], d: 1.2, name: 'rhomb. Dipyramide' }, { hkl: [0, 2, 1], d: 1.2, name: 'rhomb. Prisma' },
+          { hkl: [0, 0, 1], d: 1.4, name: 'Pinakoid' }] }
+    ] },
+  // ---------------- tetragonal ----------------
+  { id: '4', hm: '4', full: '4', sch: 'C<sub>4</sub>', name: 'tetragonal-pyramidal', system: 'tetragonal', gens: ['-y,x,z'],
+    examples: [{ name: 'Idealisierter Kristall', note: 'Seltene Klasse (z. B. Pinnoit); Prisma und Pyramide 3. Stellung zeigen, dass Spiegelebenen fehlen; oben und unten verschieden.',
+      lat: TETL(7.62, 8.19),
+      forms: [{ hkl: [2, 1, 0], d: 1.0, name: 'tetrag. Prisma 3. Stellung' }, { hkl: [1, 1, 1], d: 1.3, name: 'tetrag. Pyramide' },
+        { hkl: [3, 1, 2], d: 1.4, name: 'tetrag. Pyramide 3. Stellung' },
+        { hkl: [0, 0, -1], d: 1.05, name: 'Pedion' }, { hkl: [1, 0, -1], d: 1.2, name: 'tetrag. Pyramide' }]
+    }] },
+  { id: '-4', hm: '-4', full: '-4', sch: 'S<sub>4</sub>', name: 'tetragonal-disphenoidisch', system: 'tetragonal', gens: ['y,-x,-z'],
+    examples: [{ name: 'Cahnit', formula: 'Ca<sub>2</sub>B(AsO<sub>4</sub>)(OH)<sub>4</sub>', note: 'Tetragonale Disphenoide; ein Disphenoid 3. Stellung macht die fehlenden Spiegel sichtbar.',
+      lat: TETL(7.11, 6.19),
+      forms: [{ hkl: [1, 1, 1], d: 1.0, name: 'tetrag. Disphenoid' }, { hkl: [1, 1, 0], d: 1.0, name: 'tetrag. Prisma' },
+        { hkl: [2, 1, 1], d: 1.12, name: 'tetrag. Disphenoid 3. Stellung' }, { hkl: [-1, 1, 1], d: 1.2, name: 'tetrag. Disphenoid' }]
+    }] },
+  { id: '4/m', hm: '4/m', full: '4/m', sch: 'C<sub>4h</sub>', name: 'tetragonal-dipyramidal', system: 'tetragonal', gens: ['-y,x,z', '-x,-y,-z'],
+    examples: [{ name: 'Scheelit', formula: 'CaWO<sub>4</sub>', note: 'Dipyramiden {101} und {112} mit kleiner Dipyramide 3. Stellung {213}.',
+      lat: TETL(5.24, 11.38),
+      forms: [{ hkl: [1, 0, 1], d: 1.0, name: 'tetrag. Dipyramide' }, { hkl: [1, 1, 2], d: 1.07, name: 'tetrag. Dipyramide' },
+        { hkl: [2, 1, 3], d: 1.055, name: 'tetrag. Dipyramide 3. Stellung' }]
+    }] },
+  { id: '422', hm: '422', full: '422', sch: 'D<sub>4</sub>', name: 'tetragonal-trapezoedrisch', system: 'tetragonal', gens: ['-y,x,z', 'x,-y,-z'],
+    examples: [{ name: 'Retgersit (idealisiert)', formula: 'NiSO<sub>4</sub>·6H<sub>2</sub>O', note: 'Erst das tetragonale Trapezoeder {213} zeigt die Enantiomorphie dieser Klasse.',
+      lat: TETL(6.78, 18.28),
+      forms: [{ hkl: [0, 0, 1], d: 0.75, name: 'Pinakoid' }, { hkl: [1, 0, 2], d: 1.0, name: 'tetrag. Dipyramide' },
+        { hkl: [1, 0, 0], d: 1.05, name: 'tetrag. Prisma' }, { hkl: [2, 1, 3], d: 1.0, name: 'tetrag. Trapezoeder' }]
+    }] },
+  { id: '4mm', hm: '4mm', full: '4mm', sch: 'C<sub>4v</sub>', name: 'ditetragonal-pyramidal', system: 'tetragonal', gens: ['-y,x,z', 'x,-y,z'],
+    examples: [{ name: 'Diaboleit', formula: 'Pb<sub>2</sub>CuCl<sub>2</sub>(OH)<sub>4</sub>', note: 'Polare c-Achse: oben großes Pedion, unten tetragonale Pyramide.',
+      lat: TETL(5.88, 5.50),
+      forms: [{ hkl: [0, 0, 1], d: 0.55, name: 'Pedion' }, { hkl: [1, 0, 0], d: 1.0, name: 'tetrag. Prisma' },
+        { hkl: [1, 0, 1], d: 1.05, name: 'tetrag. Pyramide' }, { hkl: [1, 1, -1], d: 0.95, name: 'tetrag. Pyramide' }, { hkl: [2, 1, 0], d: 1.03, name: 'ditetrag. Prisma' }]
+    }] },
+  { id: '-42m', hm: '-42m', full: '-42m', sch: 'D<sub>2d</sub>', name: 'tetragonal-skalenoedrisch', system: 'tetragonal', gens: ['y,-x,-z', 'x,-y,-z'],
+    examples: [{ name: 'Chalkopyrit', formula: 'CuFeS<sub>2</sub>', note: 'Pseudotetraedrisch: zwei tetragonale Disphenoide {112} und {-112} unterschiedlicher Größe.',
+      lat: TETL(5.29, 10.42),
+      forms: [{ hkl: [1, 1, 2], d: 1.0, name: 'tetrag. Disphenoid' }, { hkl: [-1, 1, 2], d: 1.35, name: 'tetrag. Disphenoid' },
+        { hkl: [1, 0, 1], d: 1.25, name: 'tetrag. Dipyramide' }]
+    }] },
+  { id: '4/mmm', hm: '4/mmm', full: '4/m 2/m 2/m', sch: 'D<sub>4h</sub>', name: 'ditetragonal-dipyramidal', system: 'tetragonal', gens: ['-y,x,z', 'x,-y,-z', '-x,-y,-z'],
+    examples: [
+      { name: 'Zirkon', formula: 'ZrSiO<sub>4</sub>', note: 'Prisma {100} mit Dipyramide {101}; klein: Prisma {110} und ditetragonale Dipyramide {211}.',
+        lat: TETL(6.61, 6.00),
+        forms: [{ hkl: [1, 0, 0], d: 0.62, name: 'tetrag. Prisma' }, { hkl: [1, 1, 0], d: 0.8, name: 'tetrag. Prisma' },
+          { hkl: [1, 0, 1], d: 1.0, name: 'tetrag. Dipyramide' }, { hkl: [2, 1, 1], d: 1.02, name: 'ditetrag. Dipyramide' }] },
+      { name: 'Anatas', formula: 'TiO<sub>2</sub>', note: 'Spitze Dipyramide {101}, abgestumpft durch das Pinakoid {001}.',
+        lat: TETL(3.785, 9.51),
+        forms: [{ hkl: [1, 0, 1], d: 1.0, name: 'tetrag. Dipyramide' }, { hkl: [0, 0, 1], d: 0.85, name: 'Pinakoid' }] }
+    ] },
+  // ---------------- trigonal ----------------
+  { id: '3', hm: '3', full: '3', sch: 'C<sub>3</sub>', name: 'trigonal-pyramidal', system: 'trigonal', gens: ['-y,x-y,z'],
+    examples: [{ name: 'Natriumperiodat-Trihydrat (idealisiert)', formula: 'NaIO<sub>4</sub>·3H<sub>2</sub>O', note: 'Nur eine dreizählige Achse: trigonale Prismen, oben trigonale Pyramiden, unten Pedion.',
+      lat: HEXL(10, 8),
+      forms: [{ hkl: [1, 0, 0], d: 1.0, name: 'trig. Prisma' }, { hkl: [-1, 0, 0], d: 1.4, name: 'trig. Prisma' },
+        { hkl: [1, 0, 1], d: 1.25, name: 'trig. Pyramide' }, { hkl: [2, 1, 2], d: 1.33, name: 'trig. Pyramide 3. Stellung' },
+        { hkl: [0, 0, -1], d: 1.2, name: 'Pedion' }, { hkl: [0, 1, -1], d: 1.25, name: 'trig. Pyramide' }]
+    }] },
+  { id: '-3', hm: '-3', full: '-3', sch: 'C<sub>3i</sub>', name: 'rhomboedrisch', system: 'trigonal', gens: ['-y,x-y,z', '-x,-y,-z'],
+    examples: [{ name: 'Dioptas', formula: 'CuSiO<sub>2</sub>(OH)<sub>2</sub>', note: 'Hexagonales Prisma {11-20} mit Rhomboedern; das Rhomboeder 3. Stellung zeigt die fehlenden Spiegelebenen.',
+      lat: HEXL(14.57, 7.79),
+      forms: [{ hkl: [1, 1, 0], d: 1.0, name: 'hexag. Prisma' }, { hkl: [0, 2, 1], d: 1.25, name: 'Rhomboeder' },
+        { hkl: [1, 3, 1], d: 1.2, name: 'Rhomboeder 3. Stellung' }]
+    }] },
+  { id: '32', hm: '32', full: '321', sch: 'D<sub>3</sub>', name: 'trigonal-trapezoedrisch', system: 'trigonal', gens: ['-y,x-y,z', 'x-y,-y,-z'],
+    examples: [{ name: 'Tiefquarz', formula: 'SiO<sub>2</sub>', note: 'Prisma m{10-10}, Rhomboeder r{10-11} und z{01-11}, trig. Dipyramide s{11-21}, Trapezoeder x{51-61}.',
+      lat: HEXL(4.913, 5.405),
+      forms: [{ hkl: [1, 0, 0], d: 0.62, name: 'hexag. Prisma' }, { hkl: [1, 0, 1], d: 1.0, name: 'Rhomboeder' },
+        { hkl: [0, 1, 1], d: 1.06, name: 'Rhomboeder' }, { hkl: [1, 1, 1], d: 0.95, name: 'trig. Dipyramide' },
+        { hkl: [5, 1, 1], d: 0.705, name: 'trig. Trapezoeder' }]
+    }] },
+  { id: '3m', hm: '3m', full: '3m1', sch: 'C<sub>3v</sub>', name: 'ditrigonal-pyramidal', system: 'trigonal', gens: ['-y,x-y,z', '-y,-x,z'],
+    examples: [{ name: 'Turmalin', formula: '(Na,Ca)(Mg,Fe,Li,Al)<sub>3</sub>Al<sub>6</sub>(BO<sub>3</sub>)<sub>3</sub>Si<sub>6</sub>O<sub>18</sub>(OH)<sub>4</sub>', note: 'Trigonales und hexagonales Prisma; Kopf und Fuß verschieden (Hemimorphie, Pyroelektrizität).',
+      lat: HEXL(15.9, 7.1),
+      forms: [{ hkl: [1, 0, 0], d: 0.78, name: 'trig. Prisma' }, { hkl: [1, 1, 0], d: 1.0, name: 'hexag. Prisma' },
+        { hkl: [1, 0, 1], d: 1.1, name: 'trig. Pyramide' }, { hkl: [0, 2, 1], d: 1.25, name: 'trig. Pyramide' },
+        { hkl: [0, 0, -1], d: 1.2, name: 'Pedion' }, { hkl: [0, 1, -1], d: 1.1, name: 'trig. Pyramide' }]
+    }] },
+  { id: '-3m', hm: '-3m', full: '-3 2/m 1', sch: 'D<sub>3d</sub>', name: 'ditrigonal-skalenoedrisch', system: 'trigonal', gens: ['-y,x-y,z', 'x-y,-y,-z', '-x,-y,-z'],
+    examples: [
+      { name: 'Calcit', formula: 'CaCO<sub>3</sub>', note: 'Skalenoeder v{21-34} („Kanonenspat“, strukturelle Aufstellung), Enden durch das Rhomboeder r{10-14} abgestumpft.',
+        lat: HEXL(4.99, 17.06),
+        forms: [{ hkl: [2, 1, 4], d: 1.0, name: 'ditrig. Skalenoeder' }, { hkl: [1, 0, 4], d: 1.45, name: 'Rhomboeder' }] },
+      { name: 'Korund', formula: 'Al<sub>2</sub>O<sub>3</sub>', note: 'Saphir-Habitus: hexag. Dipyramide {22-43} mit Pinakoid {0001} und Rhomboeder {10-11}.',
+        lat: HEXL(4.76, 12.99),
+        forms: [{ hkl: [2, 2, 3], d: 1.0, name: 'hexag. Dipyramide' }, { hkl: [0, 0, 1], d: 0.75, name: 'Pinakoid' },
+          { hkl: [1, 0, 1], d: 1.0, name: 'Rhomboeder' }, { hkl: [1, 1, 0], d: 0.88, name: 'hexag. Prisma' }] }
+    ] },
+  // ---------------- hexagonal ----------------
+  { id: '6', hm: '6', full: '6', sch: 'C<sub>6</sub>', name: 'hexagonal-pyramidal', system: 'hexagonal', gens: ['x-y,x,z'],
+    examples: [{ name: 'Nephelin', formula: '(Na,K)AlSiO<sub>4</sub>', note: 'Prisma und Pinakoid; die hexagonale Pyramide 3. Stellung und das polare c machen die Klasse sichtbar.',
+      lat: HEXL(10.0, 8.4),
+      forms: [{ hkl: [1, 0, 0], d: 1.0, name: 'hexag. Prisma' }, { hkl: [0, 0, 1], d: 1.1, name: 'Pedion' },
+        { hkl: [1, 0, 1], d: 1.12, name: 'hexag. Pyramide' }, { hkl: [2, 1, 1], d: 1.26, name: 'hexag. Pyramide 3. Stellung' },
+        { hkl: [0, 0, -1], d: 1.0, name: 'Pedion' }, { hkl: [1, 1, -1], d: 1.25, name: 'hexag. Pyramide' }]
+    }] },
+  { id: '-6', hm: '-6', full: '-6', sch: 'C<sub>3h</sub>', name: 'trigonal-dipyramidal', system: 'hexagonal', gens: ['-y,x-y,z', 'x,y,-z'],
+    examples: [{ name: 'Idealisierter Kristall', note: 'Sehr seltene Klasse; trigonale Prismen und Dipyramiden, Spiegelebene ⊥ c.',
+      lat: HEXL(10.0, 9.0),
+      forms: [{ hkl: [1, 0, 0], d: 1.0, name: 'trig. Prisma' }, { hkl: [0, 1, 0], d: 1.12, name: 'trig. Prisma' },
+        { hkl: [1, 0, 1], d: 1.15, name: 'trig. Dipyramide' }, { hkl: [2, 1, 1], d: 1.22, name: 'trig. Dipyramide 3. Stellung' },
+        { hkl: [0, 0, 1], d: 1.2, name: 'Pinakoid' }]
+    }] },
+  { id: '6/m', hm: '6/m', full: '6/m', sch: 'C<sub>6h</sub>', name: 'hexagonal-dipyramidal', system: 'hexagonal', gens: ['x-y,x,z', '-x,-y,-z'],
+    examples: [{ name: 'Apatit', formula: 'Ca<sub>5</sub>(PO<sub>4</sub>)<sub>3</sub>(F,Cl,OH)', note: 'Prisma m, Pinakoid c, Dipyramiden x{10-11}, s{11-21} und die Dipyramide 3. Stellung μ{21-31}.',
+      lat: HEXL(9.42, 6.88),
+      forms: [{ hkl: [1, 0, 0], d: 0.8, name: 'hexag. Prisma' }, { hkl: [0, 0, 1], d: 1.05, name: 'Pinakoid' },
+        { hkl: [1, 0, 1], d: 1.0, name: 'hexag. Dipyramide' }, { hkl: [1, 1, 1], d: 1.0, name: 'hexag. Dipyramide' },
+        { hkl: [2, 1, 1], d: 0.97, name: 'hexag. Dipyramide 3. Stellung' }]
+    }] },
+  { id: '622', hm: '622', full: '622', sch: 'D<sub>6</sub>', name: 'hexagonal-trapezoedrisch', system: 'hexagonal', gens: ['x-y,x,z', 'x-y,-y,-z'],
+    examples: [{ name: 'Hochquarz', formula: 'SiO<sub>2</sub>', note: 'Hexagonale Dipyramide mit kurzem Prisma; das Trapezoeder {21-31} zeigt die Enantiomorphie.',
+      lat: HEXL(5.01, 5.47),
+      forms: [{ hkl: [1, 0, 1], d: 1.0, name: 'hexag. Dipyramide' }, { hkl: [1, 0, 0], d: 0.88, name: 'hexag. Prisma' },
+        { hkl: [2, 1, 1], d: 0.96, name: 'hexag. Trapezoeder' }]
+    }] },
+  { id: '6mm', hm: '6mm', full: '6mm', sch: 'C<sub>6v</sub>', name: 'dihexagonal-pyramidal', system: 'hexagonal', gens: ['x-y,x,z', '-y,-x,z'],
+    examples: [{ name: 'Zinkit', formula: 'ZnO', note: 'Hemimorph: oben hexagonale Pyramide, unten Pedion (000 -1).',
+      lat: HEXL(3.25, 5.21),
+      forms: [{ hkl: [1, 0, 0], d: 0.7, name: 'hexag. Prisma' }, { hkl: [1, 0, 1], d: 1.0, name: 'hexag. Pyramide' },
+        { hkl: [0, 0, -1], d: 0.9, name: 'Pedion' }, { hkl: [1, 0, -1], d: 0.9, name: 'hexag. Pyramide' }]
+    }] },
+  { id: '-6m2', hm: '-6m2', full: '-6m2', sch: 'D<sub>3h</sub>', name: 'ditrigonal-dipyramidal', system: 'hexagonal', gens: ['-y,x-y,z', 'x,y,-z', '-y,-x,z'],
+    examples: [{ name: 'Benitoit', formula: 'BaTiSi<sub>3</sub>O<sub>9</sub>', note: 'Trigonale Prismen und trigonale Dipyramiden mit Pinakoid – der Klassiker dieser Klasse.',
+      lat: HEXL(6.64, 9.76),
+      forms: [{ hkl: [1, 0, 0], d: 1.0, name: 'trig. Prisma' }, { hkl: [0, 1, 0], d: 1.25, name: 'trig. Prisma' },
+        { hkl: [1, 0, 1], d: 1.1, name: 'trig. Dipyramide' }, { hkl: [0, 1, 1], d: 1.25, name: 'trig. Dipyramide' },
+        { hkl: [0, 0, 1], d: 1.1, name: 'Pinakoid' }]
+    }] },
+  { id: '6/mmm', hm: '6/mmm', full: '6/m 2/m 2/m', sch: 'D<sub>6h</sub>', name: 'dihexagonal-dipyramidal', system: 'hexagonal', gens: ['x-y,x,z', 'x-y,-y,-z', '-x,-y,-z'],
+    examples: [{ name: 'Beryll', formula: 'Be<sub>3</sub>Al<sub>2</sub>Si<sub>6</sub>O<sub>18</sub>', note: 'Prisma {10-10}, Pinakoid {0001}, Dipyramiden {10-11} und {11-21}, dihexag. Dipyramide {21-31}.',
+      lat: HEXL(9.21, 9.19),
+      forms: [{ hkl: [1, 0, 0], d: 0.8, name: 'hexag. Prisma' }, { hkl: [0, 0, 1], d: 1.15, name: 'Pinakoid' },
+        { hkl: [1, 0, 1], d: 1.2, name: 'hexag. Dipyramide' }, { hkl: [1, 1, 1], d: 1.13, name: 'hexag. Dipyramide' }]
+    }] },
+  // ---------------- kubisch ----------------
+  { id: '23', hm: '23', full: '23', sch: 'T', name: 'tetraedrisch-pentagondodekaedrisch', system: 'kubisch', gens: ['z,x,y', '-x,-y,z', '-x,y,-z'],
+    examples: [{ name: 'Natriumchlorat', formula: 'NaClO<sub>3</sub>', note: 'Würfel, Tetraeder und Pentagondodekaeder – zusammen nur Symmetrie 23.',
+      lat: CUBL,
+      forms: [{ hkl: [1, 0, 0], d: 1.0, name: 'Würfel (Hexaeder)' }, { hkl: [1, 1, 1], d: 1.12, name: 'Tetraeder' },
+        { hkl: [2, 1, 0], d: 1.05, name: 'Pentagondodekaeder' }, { hkl: [-1, 1, 1], d: 1.3, name: 'Tetraeder' }]
+    }] },
+  { id: 'm-3', hm: 'm-3', full: '2/m -3', sch: 'T<sub>h</sub>', name: 'disdodekaedrisch', system: 'kubisch', gens: ['z,x,y', '-x,-y,z', '-x,y,-z', '-x,-y,-z'],
+    examples: [
+      { name: 'Pyrit', formula: 'FeS<sub>2</sub>', note: 'Das Pentagondodekaeder {210} – das „Pyritoeder“.',
+        lat: CUBL,
+        forms: [{ hkl: [2, 1, 0], d: 1.0, name: 'Pentagondodekaeder' }, { hkl: [1, 1, 1], d: 1.13, name: 'Oktaeder' }] },
+      { name: 'Pyrit (Kombination)', formula: 'FeS<sub>2</sub>', note: 'Würfel mit Disdodekaeder {321} und Oktaeder.',
+        lat: CUBL,
+        forms: [{ hkl: [1, 0, 0], d: 1.0, name: 'Würfel (Hexaeder)' }, { hkl: [3, 2, 1], d: 1.22, name: 'Disdodekaeder' },
+          { hkl: [1, 1, 1], d: 1.23, name: 'Oktaeder' }] }
+    ] },
+  { id: '432', hm: '432', full: '432', sch: 'O', name: 'pentagon-ikositetraedrisch', system: 'kubisch', gens: ['z,x,y', '-y,x,z'],
+    examples: [{ name: 'Idealisierter Kristall', note: 'Seltene Klasse (z. B. Petzit); erst das Gyroid {321} macht die fehlenden Spiegel sichtbar.',
+      lat: CUBL,
+      forms: [{ hkl: [1, 0, 0], d: 1.0, name: 'Würfel (Hexaeder)' }, { hkl: [1, 1, 1], d: 1.3, name: 'Oktaeder' },
+        { hkl: [3, 2, 1], d: 1.25, name: 'Pentagonikositetraeder (Gyroid)' }]
+    }] },
+  { id: '-43m', hm: '-43m', full: '-43m', sch: 'T<sub>d</sub>', name: 'hexakistetraedrisch', system: 'kubisch', gens: ['z,x,y', 'y,-x,-z'],
+    examples: [{ name: 'Tetraedrit', view: [-38, 24], formula: 'Cu<sub>12</sub>Sb<sub>4</sub>S<sub>13</sub>', note: 'Tetraeder {111} mit Tristetraeder {211} und kleinem Würfel.',
+      lat: CUBL,
+      forms: [{ hkl: [1, 1, 1], d: 1.0, name: 'Tetraeder' }, { hkl: [2, 1, 1], d: 1.07, name: 'Tristetraeder (Triakistetraeder)' },
+        { hkl: [1, 0, 0], d: 1.05, name: 'Würfel (Hexaeder)' }]
+    }] },
+  { id: 'm-3m', hm: 'm-3m', full: '4/m -3 2/m', sch: 'O<sub>h</sub>', name: 'hexakisoktaedrisch', system: 'kubisch', gens: ['z,x,y', '-y,x,z', '-x,-y,-z'],
+    examples: [
+      { name: 'Galenit', formula: 'PbS', note: 'Kubooktaeder: Würfel {100} und Oktaeder {111}.',
+        lat: CUBL,
+        forms: [{ hkl: [1, 0, 0], d: 1.0, name: 'Würfel (Hexaeder)' }, { hkl: [1, 1, 1], d: 1.4, name: 'Oktaeder' }] },
+      { name: 'Granat', formula: '(Mg,Fe,Ca,Mn)<sub>3</sub>(Al,Fe,Cr)<sub>2</sub>Si<sub>3</sub>O<sub>12</sub>', note: 'Rhombendodekaeder {110} mit Deltoidikositetraeder {211}.',
+        lat: CUBL,
+        forms: [{ hkl: [1, 1, 0], d: 1.0, name: 'Rhombendodekaeder' }, { hkl: [2, 1, 1], d: 1.1, name: 'Deltoidikositetraeder' }] }
+    ] }
+];
+const SYSTEMS = ['triklin', 'monoklin', 'orthorhombisch', 'tetragonal', 'trigonal', 'hexagonal', 'kubisch'];
+if (false) module.exports = { CLASSES, SYSTEMS };
+
+// ===== Übersetzungen (de / en / fr / es) =====
+const I18N = (() => {
+  const L = (de, en, fr, es) => ({ de, en, fr, es });
+  const ui = {
+    title: L('Die 32 Kristallklassen in 3D', 'The 32 Crystal Classes in 3D', 'Les 32 classes cristallines en 3D', 'Las 32 clases cristalinas en 3D'),
+    subtitle: L('Typische Kristallformen mit ihren Symmetrieelementen', 'Typical crystal forms with their symmetry elements', 'Formes cristallines typiques et leurs éléments de symétrie', 'Formas cristalinas típicas con sus elementos de simetría'),
+    collapse: L('Galerie einklappen', 'Collapse gallery', 'Réduire la galerie', 'Contraer galería'),
+    expand: L('Galerie ausklappen', 'Expand gallery', 'Déplier la galerie', 'Desplegar galería'),
+    quiz: L('Quiz', 'Quiz', 'Quiz', 'Quiz'),
+    endQuiz: L('Quiz beenden', 'End quiz', 'Quitter le quiz', 'Salir del quiz'),
+    sym: L('Symmetrie', 'Symmetry', 'Symétrie', 'Simetría'),
+    all: L('Alle', 'All', 'Tous', 'Todos'),
+    rot: L('Drehachsen', 'Rotation axes', 'Axes de rotation', 'Ejes de rotación'),
+    rotoinv: L('Drehinversionsachsen', 'Rotoinversion axes', 'Axes de rotoinversion', 'Ejes de rotoinversión'),
+    mirror: L('Spiegelebenen', 'Mirror planes', 'Plans miroirs', 'Planos de reflexión'),
+    inv: L('Inversionszentrum', 'Inversion centre', 'Centre d’inversion', 'Centro de inversión'),
+    view: L('Ansicht', 'View', 'Affichage', 'Vista'),
+    forms: L('Formen färben', 'Colour by form', 'Colorer les formes', 'Colorear formas'),
+    axes: L('Achsen a b c', 'Axes a b c', 'Axes a b c', 'Ejes a b c'),
+    labels: L('Beschriftung', 'Labels', 'Étiquettes', 'Etiquetas'),
+    spin: L('Rotieren', 'Spin', 'Rotation', 'Girar'),
+    opacity: L('Deckkraft', 'Opacity', 'Opacité', 'Opacidad'),
+    std: L('Standard', 'Default', 'Standard', 'Estándar'),
+    stdTitle: L('Klinographische Standardansicht', 'Standard clinographic view', 'Vue clinographique standard', 'Vista clinográfica estándar'),
+    alongA: L('Blick entlang a', 'View along a', 'Vue selon a', 'Vista a lo largo de a'),
+    alongB: L('Blick entlang b', 'View along b', 'Vue selon b', 'Vista a lo largo de b'),
+    alongC: L('Blick entlang c', 'View along c', 'Vue selon c', 'Vista a lo largo de c'),
+    hint: L('Ziehen: drehen · Mausrad: zoomen · Klick auf Fläche: markieren · ← → Klasse wechseln',
+      'Drag: rotate · Wheel: zoom · Click a face: mark it · ← → change class',
+      'Glisser : tourner · Molette : zoomer · Clic sur une face : la marquer · ← → changer de classe',
+      'Arrastrar: girar · Rueda: zoom · Clic en una cara: marcarla · ← → cambiar de clase'),
+    hintQuiz: L('Ziehen: drehen · Mausrad: zoomen · Klick auf Fläche: markieren', 'Drag: rotate · Wheel: zoom · Click a face: mark it',
+      'Glisser : tourner · Molette : zoomer · Clic sur une face : la marquer', 'Arrastrar: girar · Rueda: zoom · Clic en una cara: marcarla'),
+    symElems: L('Symmetrieelemente', 'Symmetry elements', 'Éléments de symétrie', 'Elementos de simetría'),
+    formsTitle: L('Formen', 'Forms', 'Formes', 'Formas'),
+    opHint: L('▶ führt die Operation aus – eine markierte Fläche wandert dabei auf eine äquivalente Fläche.',
+      '▶ performs the operation – a marked face moves onto an equivalent face.',
+      '▶ exécute l’opération – une face marquée est amenée sur une face équivalente.',
+      '▶ ejecuta la operación – una cara marcada pasa a una cara equivalente.'),
+    eyeAxis: L('Blick entlang der Achse', 'Look along the axis', 'Regarder le long de l’axe', 'Mirar a lo largo del eje'),
+    eyePlane: L('Ebene von der Kante betrachten', 'View the plane edge-on', 'Voir le plan par la tranche', 'Ver el plano de canto'),
+    playOp: L('Operation ausführen', 'Perform operation', 'Exécuter l’opération', 'Ejecutar la operación'),
+    onlyId: L('Nur die Identität (1) – außer der trivialen einzähligen Achse gibt es keine Symmetrieelemente.',
+      'Identity (1) only – no symmetry elements apart from the trivial onefold axis.',
+      'Identité (1) seulement – aucun élément de symétrie hormis l’axe d’ordre 1 trivial.',
+      'Solo la identidad (1): ningún elemento de simetría aparte del eje monario trivial.'),
+    invCentre: L('Inversionszentrum', 'Inversion centre', 'Centre d’inversion', 'Centro de inversión'),
+    sch: L('Schoenflies', 'Schoenflies', 'Schoenflies', 'Schoenflies'),
+    system: L('Kristallsystem', 'Crystal system', 'Système cristallin', 'Sistema cristalino'),
+    order: L('Gruppenordnung', 'Group order', 'Ordre du groupe', 'Orden del grupo'),
+    laue: L('Laue-Klasse', 'Laue class', 'Classe de Laue', 'Clase de Laue'),
+    centro: L('zentrosymmetrisch', 'centrosymmetric', 'centrosymétrique', 'centrosimétrica'),
+    noncentro: L('nicht zentrosymmetrisch', 'non-centrosymmetric', 'non centrosymétrique', 'no centrosimétrica'),
+    enantio: L('enantiomorph', 'enantiomorphic', 'énantiomorphe', 'enantiomorfa'),
+    polar: L('polar', 'polar', 'polaire', 'polar'),
+    face1: L('Fläche', 'face', 'face', 'cara'),
+    faceN: L('Flächen', 'faces', 'faces', 'caras'),
+    opRot: L('Drehung um {a}° um {d}', 'Rotation by {a}° about {d}', 'Rotation de {a}° autour de {d}', 'Rotación de {a}° alrededor de {d}'),
+    opRotoinv: L('Drehung um {a}° um {d}, dann Inversion', 'Rotation by {a}° about {d}, then inversion', 'Rotation de {a}° autour de {d}, puis inversion', 'Rotación de {a}° alrededor de {d} y luego inversión'),
+    opMirror: L('Spiegelung an {d}', 'Reflection in {d}', 'Réflexion par rapport à {d}', 'Reflexión en {d}'),
+    opInv: L('Inversion am Zentrum', 'Inversion through the centre', 'Inversion par le centre', 'Inversión a través del centro'),
+    stereo: L('Stereographische Projektion', 'Stereographic projection', 'Projection stéréographique', 'Proyección estereográfica'),
+    follow: L('Ansicht folgen', 'Follow view', 'Suivre la vue', 'Seguir la vista'),
+    stereoLegend: L('● obere · ○ untere Halbkugel · Klick auf Pol markiert Fläche', '● upper · ○ lower hemisphere · click a pole to mark its face',
+      '● hémisphère supérieur · ○ inférieur · clic sur un pôle : marquer la face', '● hemisferio superior · ○ inferior · clic en un polo marca la cara'),
+    stereoStd: L('Standardorientierung: c senkrecht zur Projektionsebene', 'Standard orientation: c normal to the projection plane',
+      'Orientation standard : c perpendiculaire au plan de projection', 'Orientación estándar: c perpendicular al plano de proyección'),
+    stereoFollow: L('Projektionsebene = Bildschirmebene', 'Projection plane = screen plane', 'Plan de projection = plan de l’écran', 'Plano de proyección = plano de la pantalla'),
+    footer: L('Kristallformen sind idealisiert und aus Punktgruppe, Gitterparametern (gerundet) und relativen Zentralabständen der Formen {hkl} berechnet; die Symmetrieelemente werden direkt aus den Gruppenoperationen abgeleitet. Indizes trigonaler und hexagonaler Kristalle in Bravais-Miller-Notation (hkil), hexagonale Aufstellung.',
+      'Crystal shapes are idealised and computed from the point group, (rounded) lattice parameters and relative central distances of the forms {hkl}; symmetry elements are derived directly from the group operations. Indices of trigonal and hexagonal crystals in Miller–Bravais notation (hkil), hexagonal setting.',
+      'Les formes cristallines sont idéalisées et calculées à partir du groupe ponctuel, des paramètres de maille (arrondis) et des distances centrales relatives des formes {hkl} ; les éléments de symétrie sont déduits directement des opérations du groupe. Indices des cristaux trigonaux et hexagonaux en notation de Miller-Bravais (hkil), maille hexagonale.',
+      'Las formas cristalinas están idealizadas y calculadas a partir del grupo puntual, los parámetros de red (redondeados) y las distancias centrales relativas de las formas {hkl}; los elementos de simetría se derivan directamente de las operaciones del grupo. Índices de cristales trigonales y hexagonales en notación de Miller-Bravais (hkil), reticulado hexagonal.'),
+    // Quiz
+    qTitle: L('Welche Kristallklasse?', 'Which crystal class?', 'Quelle classe cristalline ?', '¿Qué clase cristalina?'),
+    qIntro: L('Bestimme die Punktgruppe dieses Kristalls. Drehe ihn, färbe die Formen ein und nutze das Stereogramm der Flächenpole.',
+      'Determine the point group of this crystal. Rotate it, colour the forms and use the stereogram of face poles.',
+      'Déterminez le groupe ponctuel de ce cristal. Faites-le tourner, colorez les formes et utilisez le stéréogramme des pôles des faces.',
+      'Determina el grupo puntual de este cristal. Gíralo, colorea las formas y utiliza el estereograma de los polos de las caras.'),
+    qRight: L('Richtig!', 'Correct!', 'Correct !', '¡Correcto!'),
+    qWrong: L('Leider nicht – versuch es noch einmal.', 'Not quite – try again.', 'Pas tout à fait – réessayez.', 'No exactamente: inténtalo de nuevo.'),
+    qHint: L('Tipp: Das Kristallsystem ist {s}.', 'Hint: the crystal system is {s}.', 'Indice : le système cristallin est {s}.', 'Pista: el sistema cristalino es {s}.'),
+    qReveal: L('Auflösen', 'Reveal', 'Révéler', 'Resolver'),
+    qNext: L('Nächster Kristall', 'Next crystal', 'Cristal suivant', 'Siguiente cristal'),
+    qScore: L('Auf Anhieb richtig: {a} von {b}', 'Right first time: {a} of {b}', 'Juste du premier coup : {a} sur {b}', 'Acertadas a la primera: {a} de {b}'),
+    qSolved: L('Das war {c} – {n}.', 'That was {c} – {n}.', 'C’était {c} – {n}.', 'Era {c} – {n}.'),
+    op3m: L('Drehung um 120° um {d}, dann Spiegelung an der Ebene ⊥ dazu (3/<i>m</i>)', 'Rotation by 120° about {d}, then reflection in the plane ⊥ to it (3/<i>m</i>)', 'Rotation de 120° autour de {d}, puis réflexion par le plan ⊥ (3/<i>m</i>)', 'Rotación de 120° alrededor de {d} y luego reflexión en el plano ⊥ (3/<i>m</i>)'),
+    play3m: L('Als 3/m ausführen: Drehung um 120° und Spiegelung', 'Perform as 3/m: rotation by 120° and reflection', 'Exécuter comme 3/m : rotation de 120° et réflexion', 'Ejecutar como 3/m: rotación de 120° y reflexión'),
+    eq6: L('<b><span class="ob">6</span> ≡ 3/<i>m</i>:</b> Eine sechszählige Drehinversionsachse ist gleichwertig mit einer dreizähligen Drehachse und einer dazu senkrechten Spiegelebene. Probiere es aus: ▶ und ▶ 3/<i>m</i> führen jede Fläche auf dieselbe Fläche.',
+      '<b><span class="ob">6</span> ≡ 3/<i>m</i>:</b> a sixfold rotoinversion axis is equivalent to a threefold rotation axis with a mirror plane perpendicular to it. Try it: ▶ and ▶ 3/<i>m</i> take every face to the same face.',
+      '<b><span class="ob">6</span> ≡ 3/<i>m</i> :</b> un axe de rotoinversion d’ordre 6 équivaut à un axe de rotation d’ordre 3 avec un plan miroir perpendiculaire. Essayez : ▶ et ▶ 3/<i>m</i> amènent chaque face sur la même face.',
+      '<b><span class="ob">6</span> ≡ 3/<i>m</i>:</b> un eje de rotoinversión senario equivale a un eje ternario con un plano de reflexión perpendicular. Pruébalo: ▶ y ▶ 3/<i>m</i> llevan cada cara a la misma cara.'),
+    lang: L('Sprache', 'Language', 'Langue', 'Idioma')
+  };
+  const systems = {
+    triklin: L('triklin', 'triclinic', 'triclinique', 'triclínico'), monoklin: L('monoklin', 'monoclinic', 'monoclinique', 'monoclínico'),
+    orthorhombisch: L('orthorhombisch', 'orthorhombic', 'orthorhombique', 'ortorrómbico'), tetragonal: L('tetragonal', 'tetragonal', 'quadratique', 'tetragonal'),
+    trigonal: L('trigonal', 'trigonal', 'trigonal', 'trigonal'), hexagonal: L('hexagonal', 'hexagonal', 'hexagonal', 'hexagonal'), kubisch: L('kubisch', 'cubic', 'cubique', 'cúbico')
+  };
+  const classNames = {
+    '1': L('triklin-pedial', 'pedial', 'pédiale', 'pedial'),
+    '-1': L('triklin-pinakoidal', 'pinacoidal', 'pinacoïdale', 'pinacoidal'),
+    '2': L('monoklin-sphenoidisch', 'sphenoidal', 'sphénoïdale', 'esfenoidal'),
+    'm': L('monoklin-domatisch', 'domatic', 'domatique', 'domática'),
+    '2/m': L('monoklin-prismatisch', 'prismatic', 'prismatique', 'prismática'),
+    '222': L('rhombisch-disphenoidisch', 'rhombic-disphenoidal', 'disphénoïdale rhombique', 'biesfenoidal rómbica'),
+    'mm2': L('rhombisch-pyramidal', 'rhombic-pyramidal', 'pyramidale rhombique', 'piramidal rómbica'),
+    'mmm': L('rhombisch-dipyramidal', 'rhombic-dipyramidal', 'bipyramidale rhombique', 'bipiramidal rómbica'),
+    '4': L('tetragonal-pyramidal', 'tetragonal-pyramidal', 'pyramidale quadratique', 'piramidal tetragonal'),
+    '-4': L('tetragonal-disphenoidisch', 'tetragonal-disphenoidal', 'disphénoïdale quadratique', 'biesfenoidal tetragonal'),
+    '4/m': L('tetragonal-dipyramidal', 'tetragonal-dipyramidal', 'bipyramidale quadratique', 'bipiramidal tetragonal'),
+    '422': L('tetragonal-trapezoedrisch', 'tetragonal-trapezohedral', 'trapézoédrique quadratique', 'trapezoédrica tetragonal'),
+    '4mm': L('ditetragonal-pyramidal', 'ditetragonal-pyramidal', 'pyramidale ditétragonale', 'piramidal ditetragonal'),
+    '-42m': L('tetragonal-skalenoedrisch', 'tetragonal-scalenohedral', 'scalénoédrique quadratique', 'escalenoédrica tetragonal'),
+    '4/mmm': L('ditetragonal-dipyramidal', 'ditetragonal-dipyramidal', 'bipyramidale ditétragonale', 'bipiramidal ditetragonal'),
+    '3': L('trigonal-pyramidal', 'trigonal-pyramidal', 'pyramidale trigonale', 'piramidal trigonal'),
+    '-3': L('rhomboedrisch', 'rhombohedral', 'rhomboédrique', 'romboédrica'),
+    '32': L('trigonal-trapezoedrisch', 'trigonal-trapezohedral', 'trapézoédrique trigonale', 'trapezoédrica trigonal'),
+    '3m': L('ditrigonal-pyramidal', 'ditrigonal-pyramidal', 'pyramidale ditrigonale', 'piramidal ditrigonal'),
+    '-3m': L('ditrigonal-skalenoedrisch', 'ditrigonal-scalenohedral', 'scalénoédrique ditrigonale', 'escalenoédrica ditrigonal'),
+    '6': L('hexagonal-pyramidal', 'hexagonal-pyramidal', 'pyramidale hexagonale', 'piramidal hexagonal'),
+    '-6': L('trigonal-dipyramidal', 'trigonal-dipyramidal', 'bipyramidale trigonale', 'bipiramidal trigonal'),
+    '6/m': L('hexagonal-dipyramidal', 'hexagonal-dipyramidal', 'bipyramidale hexagonale', 'bipiramidal hexagonal'),
+    '622': L('hexagonal-trapezoedrisch', 'hexagonal-trapezohedral', 'trapézoédrique hexagonale', 'trapezoédrica hexagonal'),
+    '6mm': L('dihexagonal-pyramidal', 'dihexagonal-pyramidal', 'pyramidale dihexagonale', 'piramidal dihexagonal'),
+    '-6m2': L('ditrigonal-dipyramidal', 'ditrigonal-dipyramidal', 'bipyramidale ditrigonale', 'bipiramidal ditrigonal'),
+    '6/mmm': L('dihexagonal-dipyramidal', 'dihexagonal-dipyramidal', 'bipyramidale dihexagonale', 'bipiramidal dihexagonal'),
+    '23': L('tetraedrisch-pentagondodekaedrisch', 'tetartoidal', 'tétartoïdale', 'tetartoidal'),
+    'm-3': L('disdodekaedrisch', 'diploidal', 'diploïdale', 'diploidal'),
+    '432': L('pentagon-ikositetraedrisch', 'gyroidal', 'gyroïdale', 'giroidal'),
+    '-43m': L('hexakistetraedrisch', 'hextetrahedral', 'hexakistétraédrique', 'hexaquistetraédrica'),
+    'm-3m': L('hexakisoktaedrisch', 'hexoctahedral', 'hexakisoctaédrique', 'hexaquisoctaédrica')
+  };
+  const T3 = { de: ' (allgemeine Lage)', en: ' (general position)', fr: ' (position générale)', es: ' (posición general)' };
+  const forms = {
+    'Pedion': L('Pedion', 'pedion', 'pédion', 'pedión'),
+    'Pinakoid': L('Pinakoid', 'pinacoid', 'pinacoïde', 'pinacoide'),
+    'Sphenoid': L('Sphenoid', 'sphenoid', 'sphénoïde', 'esfenoide'),
+    'Doma': L('Doma', 'dome', 'dôme', 'domo'),
+    'Prisma': L('Prisma', 'prism', 'prisme', 'prisma'),
+    'rhomb. Prisma': L('rhomb. Prisma', 'rhombic prism', 'prisme rhombique', 'prisma rómbico'),
+    'rhomb. Disphenoid': L('rhomb. Disphenoid', 'rhombic disphenoid', 'disphénoïde rhombique', 'biesfenoide rómbico'),
+    'rhomb. Pyramide': L('rhomb. Pyramide', 'rhombic pyramid', 'pyramide rhombique', 'pirámide rómbica'),
+    'rhomb. Dipyramide': L('rhomb. Dipyramide', 'rhombic dipyramid', 'bipyramide rhombique', 'bipirámide rómbica'),
+    'tetrag. Prisma': L('tetrag. Prisma', 'tetragonal prism', 'prisme quadratique', 'prisma tetragonal'),
+    'tetrag. Pyramide': L('tetrag. Pyramide', 'tetragonal pyramid', 'pyramide quadratique', 'pirámide tetragonal'),
+    'tetrag. Disphenoid': L('tetrag. Disphenoid', 'tetragonal disphenoid', 'disphénoïde quadratique', 'biesfenoide tetragonal'),
+    'tetrag. Dipyramide': L('tetrag. Dipyramide', 'tetragonal dipyramid', 'bipyramide quadratique', 'bipirámide tetragonal'),
+    'tetrag. Trapezoeder': L('tetrag. Trapezoeder', 'tetragonal trapezohedron', 'trapézoèdre quadratique', 'trapezoedro tetragonal'),
+    'ditetrag. Prisma': L('ditetrag. Prisma', 'ditetragonal prism', 'prisme ditétragonal', 'prisma ditetragonal'),
+    'ditetrag. Dipyramide': L('ditetrag. Dipyramide', 'ditetragonal dipyramid', 'bipyramide ditétragonale', 'bipirámide ditetragonal'),
+    'trig. Prisma': L('trig. Prisma', 'trigonal prism', 'prisme trigonal', 'prisma trigonal'),
+    'trig. Pyramide': L('trig. Pyramide', 'trigonal pyramid', 'pyramide trigonale', 'pirámide trigonal'),
+    'trig. Dipyramide': L('trig. Dipyramide', 'trigonal dipyramid', 'bipyramide trigonale', 'bipirámide trigonal'),
+    'trig. Trapezoeder': L('trig. Trapezoeder', 'trigonal trapezohedron', 'trapézoèdre trigonal', 'trapezoedro trigonal'),
+    'hexag. Prisma': L('hexag. Prisma', 'hexagonal prism', 'prisme hexagonal', 'prisma hexagonal'),
+    'hexag. Pyramide': L('hexag. Pyramide', 'hexagonal pyramid', 'pyramide hexagonale', 'pirámide hexagonal'),
+    'hexag. Dipyramide': L('hexag. Dipyramide', 'hexagonal dipyramid', 'bipyramide hexagonale', 'bipirámide hexagonal'),
+    'hexag. Trapezoeder': L('hexag. Trapezoeder', 'hexagonal trapezohedron', 'trapézoèdre hexagonal', 'trapezoedro hexagonal'),
+    'dihexag. Dipyramide': L('dihexag. Dipyramide', 'dihexagonal dipyramid', 'bipyramide dihexagonale', 'bipirámide dihexagonal'),
+    'Rhomboeder': L('Rhomboeder', 'rhombohedron', 'rhomboèdre', 'romboedro'),
+    'ditrig. Skalenoeder': L('ditrig. Skalenoeder', 'ditrigonal scalenohedron', 'scalénoèdre ditrigonal', 'escalenoedro ditrigonal'),
+    'Würfel (Hexaeder)': L('Würfel (Hexaeder)', 'cube (hexahedron)', 'cube (hexaèdre)', 'cubo (hexaedro)'),
+    'Tetraeder': L('Tetraeder', 'tetrahedron', 'tétraèdre', 'tetraedro'),
+    'Oktaeder': L('Oktaeder', 'octahedron', 'octaèdre', 'octaedro'),
+    'Pentagondodekaeder': L('Pentagondodekaeder', 'pentagonal dodecahedron (pyritohedron)', 'dodécaèdre pentagonal', 'piritoedro (dodecaedro pentagonal)'),
+    'Disdodekaeder': L('Disdodekaeder', 'diploid (didodecahedron)', 'diploèdre (didodécaèdre)', 'diploedro (didodecaedro)'),
+    'Pentagonikositetraeder (Gyroid)': L('Pentagonikositetraeder (Gyroid)', 'pentagonal icositetrahedron (gyroid)', 'icositétraèdre pentagonal (gyroèdre)', 'giroedro (icositetraedro pentagonal)'),
+    'Tristetraeder (Triakistetraeder)': L('Tristetraeder (Triakistetraeder)', 'tristetrahedron (triakis tetrahedron)', 'tristétraèdre (triakistétraèdre)', 'tritetraedro (triaquistetraedro)'),
+    'Rhombendodekaeder': L('Rhombendodekaeder', 'rhombic dodecahedron', 'dodécaèdre rhombique', 'dodecaedro rómbico'),
+    'Deltoidikositetraeder': L('Deltoidikositetraeder', 'deltoid icositetrahedron (trapezohedron)', 'icositétraèdre trapézoïdal (trapézoèdre)', 'trapezoedro (icositetraedro deltoidal)')
+  };
+  function formName(de, lang) {
+    const m = de.match(/^(.*) 3\. Stellung$/);
+    if (m) { const b = forms[m[1]]; return b ? b[lang] + T3[lang] : de; }
+    return forms[de] ? forms[de][lang] : de;
+  }
+  const minerals = {
+    'Idealisierter Kristall': L('Idealisierter Kristall', 'Idealised crystal', 'Cristal idéalisé', 'Cristal idealizado'),
+    'Idealisiert (z. B. Parahilgardit)': L('Idealisiert (z. B. Parahilgardit)', 'Idealised (e.g. parahilgardite)', 'Idéalisé (p. ex. parahilgardite)', 'Idealizado (p. ej. parahilgardita)'),
+    'Chalkanthit': L('Chalkanthit', 'Chalcanthite', 'Chalcanthite', 'Calcantita'),
+    'Saccharose': L('Saccharose', 'Sucrose', 'Saccharose', 'Sacarosa'),
+    'Skolezit': L('Skolezit', 'Scolecite', 'Scolécite', 'Escolecita'),
+    'Orthoklas': L('Orthoklas', 'Orthoclase', 'Orthose', 'Ortoclasa'),
+    'Gips': L('Gips', 'Gypsum', 'Gypse', 'Yeso'),
+    'Epsomit': L('Epsomit', 'Epsomite', 'Epsomite', 'Epsomita'),
+    'Hemimorphit': L('Hemimorphit', 'Hemimorphite', 'Hémimorphite', 'Hemimorfita'),
+    'Schwefel (α)': L('Schwefel (α)', 'Sulfur (α)', 'Soufre (α)', 'Azufre (α)'),
+    'Topas': L('Topas', 'Topaz', 'Topaze', 'Topacio'),
+    'Cahnit': L('Cahnit', 'Cahnite', 'Cahnite', 'Cahnita'),
+    'Scheelit': L('Scheelit', 'Scheelite', 'Scheelite', 'Scheelita'),
+    'Retgersit (idealisiert)': L('Retgersit (idealisiert)', 'Retgersite (idealised)', 'Retgersite (idéalisée)', 'Retgersita (idealizada)'),
+    'Diaboleit': L('Diaboleit', 'Diaboleite', 'Diaboléite', 'Diaboleíta'),
+    'Chalkopyrit': L('Chalkopyrit', 'Chalcopyrite', 'Chalcopyrite', 'Calcopirita'),
+    'Zirkon': L('Zirkon', 'Zircon', 'Zircon', 'Circón'),
+    'Anatas': L('Anatas', 'Anatase', 'Anatase', 'Anatasa'),
+    'Natriumperiodat-Trihydrat (idealisiert)': L('Natriumperiodat-Trihydrat (idealisiert)', 'Sodium periodate trihydrate (idealised)', 'Periodate de sodium trihydraté (idéalisé)', 'Peryodato de sodio trihidratado (idealizado)'),
+    'Dioptas': L('Dioptas', 'Dioptase', 'Dioptase', 'Dioptasa'),
+    'Tiefquarz': L('Quarz (Tiefquarz)', 'Quartz (α-quartz)', 'Quartz (α)', 'Cuarzo (α)'),
+    'Turmalin': L('Turmalin', 'Tourmaline', 'Tourmaline', 'Turmalina'),
+    'Calcit': L('Calcit', 'Calcite', 'Calcite', 'Calcita'),
+    'Korund': L('Korund', 'Corundum', 'Corindon', 'Corindón'),
+    'Nephelin': L('Nephelin', 'Nepheline', 'Néphéline', 'Nefelina'),
+    'Apatit': L('Apatit', 'Apatite', 'Apatite', 'Apatito'),
+    'Hochquarz': L('Hochquarz (β-Quarz)', 'β-Quartz (high quartz)', 'Quartz β', 'Cuarzo β (alto)'),
+    'Zinkit': L('Zinkit', 'Zincite', 'Zincite', 'Zincita'),
+    'Benitoit': L('Benitoit', 'Benitoite', 'Bénitoïte', 'Benitoíta'),
+    'Beryll': L('Beryll', 'Beryl', 'Béryl', 'Berilo'),
+    'Natriumchlorat': L('Natriumchlorat', 'Sodium chlorate', 'Chlorate de sodium', 'Clorato de sodio'),
+    'Pyrit': L('Pyrit', 'Pyrite', 'Pyrite', 'Pirita'),
+    'Pyrit (Kombination)': L('Pyrit (Kombination)', 'Pyrite (combination)', 'Pyrite (combinaison)', 'Pirita (combinación)'),
+    'Tetraedrit': L('Tetraedrit', 'Tetrahedrite', 'Tétraédrite', 'Tetraedrita'),
+    'Galenit': L('Galenit', 'Galena', 'Galène', 'Galena'),
+    'Granat': L('Granat', 'Garnet', 'Grenat', 'Granate')
+  };
+  const notes = {
+    '1#0': L('Unter Mineralen sehr selten: nur rund 50 Arten kristallisieren pedial, z. B. Parahilgardit, Kaolinit oder Tantit – ohne typische Lehrbuchtracht. Auch synthetische Verbindungen wie Calciumthiosulfat-Hexahydrat gehören hierher. Jede Fläche ist ein eigenes Pedion.',
+      'Very rare among minerals: only about 50 species are pedial, e.g. parahilgardite, kaolinite or tantite – none with a typical textbook habit. Synthetic compounds such as calcium thiosulfate hexahydrate also belong here. Every face is a pedion of its own.',
+      'Très rare parmi les minéraux : seules une cinquantaine d’espèces sont pédiales, p. ex. la parahilgardite, la kaolinite ou la tantite – sans faciès typique de manuel. Des composés synthétiques comme le thiosulfate de calcium hexahydraté en font aussi partie. Chaque face est un pédion à elle seule.',
+      'Muy rara entre los minerales: solo unas 50 especies son pediales, p. ej. la parahilgardita, la caolinita o la tantita, sin un hábito típico de manual. También pertenecen aquí compuestos sintéticos como el tiosulfato de calcio hexahidratado. Cada cara es un pedión independiente.'),
+    '-1#0': L('Kupfervitriol; alle Formen sind Pinakoide (Flächenpaare).', 'Blue vitriol; all forms are pinacoids (pairs of parallel faces).',
+      'Vitriol bleu ; toutes les formes sont des pinacoïdes (paires de faces parallèles).', 'Vitriolo azul; todas las formas son pinacoides (pares de caras paralelas).'),
+    '2#0': L('Rohrzucker; polare b-Achse – die beiden Enden sind verschieden ausgebildet.', 'Cane sugar; polar b axis – the two ends are developed differently.',
+      'Sucre de canne ; axe b polaire – les deux extrémités sont différentes.', 'Azúcar de caña; eje b polar: los dos extremos están desarrollados de forma distinta.'),
+    'm#0': L('Zeolith; nur eine Spiegelebene, die c-Achse ist polar.', 'A zeolite; a single mirror plane, the c axis is polar.',
+      'Une zéolite ; un seul plan miroir, l’axe c est polaire.', 'Una zeolita; un único plano de reflexión, el eje c es polar.'),
+    '2/m#0': L('Kalifeldspat; typische Tracht mit M{010}, T{110}, P{001} und y{-201}.', 'K-feldspar; typical habit with M{010}, T{110}, P{001} and y{-201}.',
+      'Feldspath potassique ; faciès typique avec M{010}, T{110}, P{001} et y{-201}.', 'Feldespato potásico; hábito típico con M{010}, T{110}, P{001} e y{-201}.'),
+    '2/m#1': L('Tafelig nach {010}, mit Prisma {120} und Prisma {-111}.', 'Tabular on {010}, with prisms {120} and {-111}.',
+      'Tabulaire selon {010}, avec les prismes {120} et {-111}.', 'Tabular según {010}, con los prismas {120} y {-111}.'),
+    '222#0': L('Bittersalz; Prisma {110} mit rhombischem Disphenoid {111}.', 'Epsom salt; prism {110} with rhombic disphenoid {111}.',
+      'Sel d’Epsom ; prisme {110} avec disphénoïde rhombique {111}.', 'Sal de Epsom; prisma {110} con biesfenoide rómbico {111}.'),
+    'mm2#0': L('Namensgeber der Hemimorphie: oben Domen und Pedion, unten Pyramide.', 'Namesake of hemimorphism: domes and pedion on top, a pyramid below.',
+      'Éponyme de l’hémimorphisme : dômes et pédion en haut, pyramide en bas.', 'Da nombre al hemimorfismo: domos y pedión arriba, pirámide abajo.'),
+    'mmm#0': L('Rhombische Dipyramide {111} mit {113} und Pinakoid {001}.', 'Rhombic dipyramid {111} with {113} and pinacoid {001}.',
+      'Bipyramide rhombique {111} avec {113} et pinacoïde {001}.', 'Bipirámide rómbica {111} con {113} y pinacoide {001}.'),
+    'mmm#1': L('Prismen {110}, {120} mit Dipyramide {111}, Prisma {021} und Pinakoid {001}.', 'Prisms {110}, {120} with dipyramid {111}, prism {021} and pinacoid {001}.',
+      'Prismes {110}, {120} avec bipyramide {111}, prisme {021} et pinacoïde {001}.', 'Prismas {110}, {120} con bipirámide {111}, prisma {021} y pinacoide {001}.'),
+    '4#0': L('Seltene Klasse (z. B. Pinnoit); Prisma und Pyramide in allgemeiner Lage zeigen, dass Spiegelebenen fehlen; oben und unten verschieden.',
+      'Rare class (e.g. pinnoite); prism and pyramid in general position show that mirror planes are absent; top and bottom differ.',
+      'Classe rare (p. ex. pinnoïte) ; prisme et pyramide en position générale montrent l’absence de plans miroirs ; haut et bas diffèrent.',
+      'Clase rara (p. ej. pinnoíta); el prisma y la pirámide en posición general muestran que faltan planos de reflexión; arriba y abajo difieren.'),
+    '-4#0': L('Tetragonale Disphenoide; ein Disphenoid in allgemeiner Lage macht die fehlenden Spiegel sichtbar.', 'Tetragonal disphenoids; a disphenoid in general position reveals the missing mirrors.',
+      'Disphénoïdes quadratiques ; un disphénoïde en position générale révèle l’absence de miroirs.', 'Biesfenoides tetragonales; un biesfenoide en posición general revela la ausencia de espejos.'),
+    '4/m#0': L('Dipyramiden {101} und {112} mit kleiner Dipyramide in allgemeiner Lage {213}.', 'Dipyramids {101} and {112} with a small dipyramid in general position {213}.',
+      'Bipyramides {101} et {112} avec une petite bipyramide en position générale {213}.', 'Bipirámides {101} y {112} con una pequeña bipirámide en posición general {213}.'),
+    '422#0': L('Erst das tetragonale Trapezoeder {213} zeigt die Enantiomorphie dieser Klasse.', 'Only the tetragonal trapezohedron {213} reveals the enantiomorphism of this class.',
+      'Seul le trapézoèdre quadratique {213} révèle l’énantiomorphisme de cette classe.', 'Solo el trapezoedro tetragonal {213} revela la enantiomorfía de esta clase.'),
+    '4mm#0': L('Polare c-Achse: oben großes Pedion, unten tetragonale Pyramide.', 'Polar c axis: large pedion on top, tetragonal pyramid below.',
+      'Axe c polaire : grand pédion en haut, pyramide quadratique en bas.', 'Eje c polar: gran pedión arriba, pirámide tetragonal abajo.'),
+    '-42m#0': L('Pseudotetraedrisch: zwei tetragonale Disphenoide {112} und {-112} unterschiedlicher Größe.', 'Pseudo-tetrahedral: two tetragonal disphenoids {112} and {-112} of different size.',
+      'Pseudo-tétraédrique : deux disphénoïdes quadratiques {112} et {-112} de tailles différentes.', 'Pseudotetraédrico: dos biesfenoides tetragonales {112} y {-112} de distinto tamaño.'),
+    '4/mmm#0': L('Prisma {100} mit Dipyramide {101}; klein: Prisma {110} und ditetragonale Dipyramide {211}.', 'Prism {100} with dipyramid {101}; small: prism {110} and ditetragonal dipyramid {211}.',
+      'Prisme {100} avec bipyramide {101} ; petites faces : prisme {110} et bipyramide ditétragonale {211}.', 'Prisma {100} con bipirámide {101}; caras pequeñas: prisma {110} y bipirámide ditetragonal {211}.'),
+    '4/mmm#1': L('Spitze Dipyramide {101}, abgestumpft durch das Pinakoid {001}.', 'Steep dipyramid {101}, truncated by the pinacoid {001}.',
+      'Bipyramide aiguë {101}, tronquée par le pinacoïde {001}.', 'Bipirámide aguda {101}, truncada por el pinacoide {001}.'),
+    '3#0': L('Nur eine dreizählige Achse: trigonale Prismen, oben trigonale Pyramiden, unten Pedion.', 'A single threefold axis: trigonal prisms, trigonal pyramids on top, a pedion below.',
+      'Un seul axe d’ordre 3 : prismes trigonaux, pyramides trigonales en haut, pédion en bas.', 'Un único eje ternario: prismas trigonales, pirámides trigonales arriba, pedión abajo.'),
+    '-3#0': L('Hexagonales Prisma {11-20} mit Rhomboedern; das Rhomboeder in allgemeiner Lage zeigt die fehlenden Spiegelebenen.', 'Hexagonal prism {11-20} with rhombohedra; the rhombohedron in general position reveals the missing mirror planes.',
+      'Prisme hexagonal {11-20} avec rhomboèdres ; le rhomboèdre en position générale révèle l’absence de plans miroirs.', 'Prisma hexagonal {11-20} con romboedros; el romboedro en posición general revela la ausencia de planos de reflexión.'),
+    '32#0': L('Prisma m{10-10}, Rhomboeder r{10-11} und z{01-11}, trig. Dipyramide s{11-21}, Trapezoeder x{51-61}.', 'Prism m{10-10}, rhombohedra r{10-11} and z{01-11}, trigonal dipyramid s{11-21}, trapezohedron x{51-61}.',
+      'Prisme m{10-10}, rhomboèdres r{10-11} et z{01-11}, bipyramide trigonale s{11-21}, trapézoèdre x{51-61}.', 'Prisma m{10-10}, romboedros r{10-11} y z{01-11}, bipirámide trigonal s{11-21}, trapezoedro x{51-61}.'),
+    '3m#0': L('Trigonales und hexagonales Prisma; Kopf und Fuß verschieden (Hemimorphie, Pyroelektrizität).', 'Trigonal and hexagonal prisms; the two ends differ (hemimorphism, pyroelectricity).',
+      'Prismes trigonal et hexagonal ; les deux extrémités diffèrent (hémimorphisme, pyroélectricité).', 'Prismas trigonal y hexagonal; los dos extremos difieren (hemimorfismo, piroelectricidad).'),
+    '-3m#0': L('Skalenoeder v{21-34} („Kanonenspat“, strukturelle Aufstellung), Enden durch das Rhomboeder r{10-14} abgestumpft.', 'Scalenohedron v{21-34} (“dogtooth spar”, structural cell), ends truncated by the rhombohedron r{10-14}.',
+      'Scalénoèdre v{21-34} (« dent de chien », maille structurale), extrémités tronquées par le rhomboèdre r{10-14}.', 'Escalenoedro v{21-34} («diente de perro», celda estructural), extremos truncados por el romboedro r{10-14}.'),
+    '-3m#1': L('Saphir-Habitus: hexag. Dipyramide {22-43} mit Pinakoid {0001} und Rhomboeder {10-11}.', 'Sapphire habit: hexagonal dipyramid {22-43} with pinacoid {0001} and rhombohedron {10-11}.',
+      'Faciès saphir : bipyramide hexagonale {22-43} avec pinacoïde {0001} et rhomboèdre {10-11}.', 'Hábito de zafiro: bipirámide hexagonal {22-43} con pinacoide {0001} y romboedro {10-11}.'),
+    '6#0': L('Prisma und Pedien; die hexagonale Pyramide in allgemeiner Lage und das polare c machen die Klasse sichtbar.', 'Prism and pedions; the hexagonal pyramid in general position and the polar c axis reveal the class.',
+      'Prisme et pédions ; la pyramide hexagonale en position générale et l’axe c polaire révèlent la classe.', 'Prisma y pediones; la pirámide hexagonal en posición general y el eje c polar revelan la clase.'),
+    '-6#0': L('Sehr seltene Klasse; trigonale Prismen und Dipyramiden, Spiegelebene ⊥ c.', 'Very rare class; trigonal prisms and dipyramids, mirror plane ⊥ c.',
+      'Classe très rare ; prismes et bipyramides trigonaux, plan miroir ⊥ c.', 'Clase muy rara; prismas y bipirámides trigonales, plano de reflexión ⊥ c.'),
+    '6/m#0': L('Prisma m, Pinakoid c, Dipyramiden x{10-11}, s{11-21} und die Dipyramide in allgemeiner Lage μ{21-31}.', 'Prism m, pinacoid c, dipyramids x{10-11}, s{11-21} and the dipyramid in general position μ{21-31}.',
+      'Prisme m, pinacoïde c, bipyramides x{10-11}, s{11-21} et la bipyramide en position générale μ{21-31}.', 'Prisma m, pinacoide c, bipirámides x{10-11}, s{11-21} y la bipirámide en posición general μ{21-31}.'),
+    '622#0': L('Hexagonale Dipyramide mit kurzem Prisma; das Trapezoeder {21-31} zeigt die Enantiomorphie. Die Kristalle wachsen oberhalb von 573 °C und wandeln sich beim Abkühlen in Tiefquarz um – ihre hexagonale Gestalt bleibt dabei erhalten (Paramorphosen).', 'Hexagonal dipyramid with a short prism; the trapezohedron {21-31} reveals the enantiomorphism. The crystals grow above 573 °C and transform into α-quartz on cooling, but keep their hexagonal shape (paramorphs).',
+      'Bipyramide hexagonale avec un prisme court ; le trapézoèdre {21-31} révèle l’énantiomorphisme. Les cristaux croissent au-dessus de 573 °C et se transforment en quartz α au refroidissement, tout en gardant leur forme hexagonale (paramorphoses).', 'Bipirámide hexagonal con prisma corto; el trapezoedro {21-31} revela la enantiomorfía. Los cristales crecen por encima de 573 °C y se transforman en cuarzo α al enfriarse, pero conservan su forma hexagonal (paramorfosis).'),
+    '6mm#0': L('Hemimorph: oben hexagonale Pyramide, unten Pedion (000-1) und flache Pyramide.', 'Hemimorphic: hexagonal pyramid on top, pedion (000-1) and a flat pyramid below.',
+      'Hémimorphe : pyramide hexagonale en haut, pédion (000-1) et pyramide aplatie en bas.', 'Hemimorfo: pirámide hexagonal arriba, pedión (000-1) y pirámide achatada abajo.'),
+    '-6m2#0': L('Trigonale Prismen und trigonale Dipyramiden mit Pinakoid – der Klassiker dieser Klasse.', 'Trigonal prisms and trigonal dipyramids with pinacoid – the classic of this class.',
+      'Prismes et bipyramides trigonaux avec pinacoïde – le classique de cette classe.', 'Prismas y bipirámides trigonales con pinacoide: el clásico de esta clase.'),
+    '6/mmm#0': L('Klassische Tracht: Prisma {10-10}, Pinakoid {0001} und die Dipyramiden {10-11} und {11-21}.', 'Classic habit: prism {10-10}, pinacoid {0001} and the dipyramids {10-11} and {11-21}.',
+      'Faciès classique : prisme {10-10}, pinacoïde {0001} et les bipyramides {10-11} et {11-21}.', 'Hábito clásico: prisma {10-10}, pinacoide {0001} y las bipirámides {10-11} y {11-21}.'),
+    '23#0': L('Würfel, Tetraeder und Pentagondodekaeder – zusammen nur Symmetrie 23.', 'Cube, tetrahedra and pentagonal dodecahedron – together only symmetry 23.',
+      'Cube, tétraèdres et dodécaèdre pentagonal – ensemble, seulement la symétrie 23.', 'Cubo, tetraedros y dodecaedro pentagonal: juntos solo simetría 23.'),
+    'm-3#0': L('Das Pentagondodekaeder {210} – das „Pyritoeder“ – mit kleinen Oktaederflächen.', 'The pentagonal dodecahedron {210} – the “pyritohedron” – with small octahedral faces.',
+      'Le dodécaèdre pentagonal {210} – le « pyritoèdre » – avec de petites faces d’octaèdre.', 'El dodecaedro pentagonal {210}: el «piritoedro», con pequeñas caras de octaedro.'),
+    'm-3#1': L('Würfel mit Disdodekaeder {321} und Oktaeder.', 'Cube with diploid {321} and octahedron.', 'Cube avec diploèdre {321} et octaèdre.', 'Cubo con diploedro {321} y octaedro.'),
+    '432#0': L('Seltene Klasse (z. B. Petzit); erst das Gyroid {321} macht die fehlenden Spiegel sichtbar.', 'Rare class (e.g. petzite); only the gyroid {321} reveals the missing mirrors.',
+      'Classe rare (p. ex. petzite) ; seul le gyroèdre {321} révèle l’absence de miroirs.', 'Clase rara (p. ej. petzita); solo el giroedro {321} revela la ausencia de espejos.'),
+    '-43m#0': L('Tetraeder {111} mit Tristetraeder {211} und kleinem Würfel.', 'Tetrahedron {111} with tristetrahedron {211} and a small cube.',
+      'Tétraèdre {111} avec tristétraèdre {211} et petit cube.', 'Tetraedro {111} con tritetraedro {211} y un pequeño cubo.'),
+    'm-3m#0': L('Kubooktaeder: Würfel {100} und Oktaeder {111}.', 'Cuboctahedron: cube {100} and octahedron {111}.', 'Cubo-octaèdre : cube {100} et octaèdre {111}.', 'Cuboctaedro: cubo {100} y octaedro {111}.'),
+    'm-3m#1': L('Rhombendodekaeder {110} mit Deltoidikositetraeder {211}.', 'Rhombic dodecahedron {110} with deltoid icositetrahedron {211}.',
+      'Dodécaèdre rhombique {110} avec icositétraèdre trapézoïdal {211}.', 'Dodecaedro rómbico {110} con trapezoedro {211}.')
+  };
+  return { ui, systems, classNames, formName, minerals, notes, LANGS: ['de', 'en', 'fr', 'es'] };
+})();
+// ===== Erklärungen der Formtypen =====
+I18N.formDefs = (() => {
+  const L = (de, en, fr, es) => ({ de, en, fr, es });
+  return {
+    'Pedion': L('Eine einzelne Fläche ohne symmetrieäquivalente Partnerfläche. Offene Form – kommt nur in polaren Klassen ohne Inversionszentrum vor.',
+      'A single face with no symmetry-equivalent partner. An open form – occurs only in polar classes without an inversion centre.',
+      'Une face unique sans face équivalente par symétrie. Forme ouverte – n’existe que dans les classes polaires sans centre d’inversion.',
+      'Una única cara sin cara equivalente por simetría. Forma abierta: solo aparece en clases polares sin centro de inversión.'),
+    'Pinakoid': L('Zwei parallele Flächen, die durch Inversion, eine Spiegelebene oder eine dazu senkrechte 2-zählige Achse verknüpft sind. Offene Form.',
+      'Two parallel faces related by inversion, a mirror plane or a perpendicular twofold axis. An open form.',
+      'Deux faces parallèles reliées par inversion, par un plan miroir ou par un axe d’ordre 2 perpendiculaire. Forme ouverte.',
+      'Dos caras paralelas relacionadas por inversión, un plano de reflexión o un eje binario perpendicular. Forma abierta.'),
+    'Sphenoid': L('Zwei nicht parallele Flächen, die durch eine 2-zählige Drehachse verknüpft sind – ein „Keil“. Offene Form.',
+      'Two non-parallel faces related by a twofold rotation axis – a “wedge”. An open form.',
+      'Deux faces non parallèles reliées par un axe de rotation d’ordre 2 – un « coin ». Forme ouverte.',
+      'Dos caras no paralelas relacionadas por un eje binario: una «cuña». Forma abierta.'),
+    'Doma': L('Zwei nicht parallele Flächen, die durch eine Spiegelebene verknüpft sind – ein „Dach“. Offene Form.',
+      'Two non-parallel faces related by a mirror plane – a “roof”. An open form.',
+      'Deux faces non parallèles reliées par un plan miroir – un « toit ». Forme ouverte.',
+      'Dos caras no paralelas relacionadas por un plano de reflexión: un «tejado». Forma abierta.'),
+    'Prisma': L('Flächen, die alle zu einer gemeinsamen Richtung parallel liegen und einen beidseitig offenen „Schlauch“ bilden. Im monoklinen System vier Flächen. Offene Form.',
+      'Faces that are all parallel to one common direction, forming a tube open at both ends. Four faces in the monoclinic system. An open form.',
+      'Faces toutes parallèles à une même direction, formant un tube ouvert aux deux bouts. Quatre faces dans le système monoclinique. Forme ouverte.',
+      'Caras paralelas a una misma dirección que forman un tubo abierto por ambos extremos. Cuatro caras en el sistema monoclínico. Forma abierta.'),
+    'rhomb. Prisma': L('Vier Flächen parallel zu einer Kristallachse mit rhombischem Querschnitt. Offene Form.',
+      'Four faces parallel to one crystal axis with a rhombic cross-section. An open form.',
+      'Quatre faces parallèles à un axe cristallographique, de section losangique. Forme ouverte.',
+      'Cuatro caras paralelas a un eje cristalográfico, de sección rómbica. Forma abierta.'),
+    'rhomb. Disphenoid': L('Vier ungleichseitige Dreiecke; je zwei obere und untere Flächen sind um 90° gegeneinander verdreht und durch drei 2-zählige Achsen verknüpft. Geschlossene, chirale Form.',
+      'Four scalene triangles; the upper and lower pairs are rotated by 90° against each other and related by three twofold axes. A closed, chiral form.',
+      'Quatre triangles scalènes ; les paires supérieure et inférieure sont tournées de 90° l’une par rapport à l’autre et reliées par trois axes d’ordre 2. Forme fermée et chirale.',
+      'Cuatro triángulos escalenos; los pares superior e inferior están girados 90° entre sí y relacionados por tres ejes binarios. Forma cerrada y quiral.'),
+    'rhomb. Pyramide': L('Vier Flächen, die sich in einem Punkt auf der polaren 2-zähligen Achse treffen. Offene Form.',
+      'Four faces meeting at a point on the polar twofold axis. An open form.',
+      'Quatre faces se rejoignant en un point de l’axe d’ordre 2 polaire. Forme ouverte.',
+      'Cuatro caras que se encuentran en un punto del eje binario polar. Forma abierta.'),
+    'rhomb. Dipyramide': L('Acht Flächen: zwei rhombische Pyramiden, Spitze an Spitze durch eine Spiegelebene verbunden. Geschlossene Form.',
+      'Eight faces: two rhombic pyramids joined base to base across a mirror plane. A closed form.',
+      'Huit faces : deux pyramides rhombiques accolées par la base de part et d’autre d’un plan miroir. Forme fermée.',
+      'Ocho caras: dos pirámides rómbicas unidas por la base a ambos lados de un plano de reflexión. Forma cerrada.'),
+    'tetrag. Prisma': L('Vier Flächen parallel zu c mit quadratischem Querschnitt. Offene Form.',
+      'Four faces parallel to c with a square cross-section. An open form.',
+      'Quatre faces parallèles à c, de section carrée. Forme ouverte.',
+      'Cuatro caras paralelas a c, de sección cuadrada. Forma abierta.'),
+    'tetrag. Pyramide': L('Vier Flächen, die sich in einem Punkt auf der 4-zähligen Achse treffen. Offene Form.',
+      'Four faces meeting at a point on the fourfold axis. An open form.',
+      'Quatre faces se rejoignant en un point de l’axe d’ordre 4. Forme ouverte.',
+      'Cuatro caras que se encuentran en un punto del eje cuaternario. Forma abierta.'),
+    'tetrag. Disphenoid': L('Vier gleichschenklige Dreiecke; die obere Kante ist um 90° gegen die untere verdreht – durch eine 4̄-Achse verknüpft. Geschlossene Form, sieht aus wie ein gestauchtes oder gestrecktes Tetraeder.',
+      'Four isosceles triangles; the upper edge is rotated by 90° against the lower one – related by a 4̄ axis. A closed form, like a squashed or stretched tetrahedron.',
+      'Quatre triangles isocèles ; l’arête supérieure est tournée de 90° par rapport à l’arête inférieure – reliées par un axe 4̄. Forme fermée, comme un tétraèdre aplati ou étiré.',
+      'Cuatro triángulos isósceles; la arista superior está girada 90° respecto a la inferior, relacionadas por un eje 4̄. Forma cerrada, como un tetraedro achatado o estirado.'),
+    'tetrag. Dipyramide': L('Acht Flächen: zwei tetragonale Pyramiden, Basis an Basis über eine Spiegelebene ⊥ c. Geschlossene Form.',
+      'Eight faces: two tetragonal pyramids joined base to base across a mirror plane ⊥ c. A closed form.',
+      'Huit faces : deux pyramides quadratiques accolées par la base de part et d’autre d’un plan miroir ⊥ c. Forme fermée.',
+      'Ocho caras: dos pirámides tetragonales unidas por la base a ambos lados de un plano de reflexión ⊥ c. Forma cerrada.'),
+    'tetrag. Trapezoeder': L('Acht Trapezflächen; obere und untere Hälfte sind gegeneinander verdreht und nur durch Drehachsen (4 und 2) verknüpft. Geschlossene, chirale Form – es gibt eine Rechts- und eine Linksform.',
+      'Eight trapezoid faces; the upper and lower halves are twisted against each other and related only by rotation axes (4 and 2). A closed, chiral form with right- and left-handed variants.',
+      'Huit faces trapézoïdales ; les moitiés supérieure et inférieure sont tordues l’une par rapport à l’autre et reliées seulement par des axes de rotation (4 et 2). Forme fermée et chirale, droite ou gauche.',
+      'Ocho caras trapezoidales; las mitades superior e inferior están giradas entre sí y relacionadas solo por ejes de rotación (4 y 2). Forma cerrada y quiral, dextra o levógira.'),
+    'ditetrag. Prisma': L('Acht Flächen parallel zu c; achteckiger Querschnitt mit abwechselnd verschiedenen Kantenwinkeln. Offene Form.',
+      'Eight faces parallel to c; an octagonal cross-section with alternating interfacial angles. An open form.',
+      'Huit faces parallèles à c ; section octogonale aux angles dièdres alternés. Forme ouverte.',
+      'Ocho caras paralelas a c; sección octogonal con ángulos diedros alternos. Forma abierta.'),
+    'ditetrag. Dipyramide': L('16 Flächen: zwei ditetragonale Pyramiden über eine Spiegelebene ⊥ c – die allgemeine Form der Klasse 4/mmm. Geschlossene Form.',
+      '16 faces: two ditetragonal pyramids across a mirror plane ⊥ c – the general form of class 4/mmm. A closed form.',
+      '16 faces : deux pyramides ditétragonales de part et d’autre d’un plan miroir ⊥ c – la forme générale de la classe 4/mmm. Forme fermée.',
+      '16 caras: dos pirámides ditetragonales a ambos lados de un plano de reflexión ⊥ c; la forma general de la clase 4/mmm. Forma cerrada.'),
+    'trig. Prisma': L('Drei Flächen parallel zu c mit dreieckigem Querschnitt. Offene Form.',
+      'Three faces parallel to c with a triangular cross-section. An open form.',
+      'Trois faces parallèles à c, de section triangulaire. Forme ouverte.',
+      'Tres caras paralelas a c, de sección triangular. Forma abierta.'),
+    'trig. Pyramide': L('Drei Flächen, die sich in einem Punkt auf der 3-zähligen Achse treffen. Offene Form.',
+      'Three faces meeting at a point on the threefold axis. An open form.',
+      'Trois faces se rejoignant en un point de l’axe d’ordre 3. Forme ouverte.',
+      'Tres caras que se encuentran en un punto del eje ternario. Forma abierta.'),
+    'trig. Dipyramide': L('Sechs Flächen: zwei trigonale Pyramiden Basis an Basis, verknüpft durch eine Spiegelebene ⊥ c oder durch 2-zählige Achsen ⊥ c. Geschlossene Form.',
+      'Six faces: two trigonal pyramids joined base to base, related by a mirror plane ⊥ c or by twofold axes ⊥ c. A closed form.',
+      'Six faces : deux pyramides trigonales accolées par la base, reliées par un plan miroir ⊥ c ou par des axes d’ordre 2 ⊥ c. Forme fermée.',
+      'Seis caras: dos pirámides trigonales unidas por la base, relacionadas por un plano de reflexión ⊥ c o por ejes binarios ⊥ c. Forma cerrada.'),
+    'trig. Trapezoeder': L('Sechs Trapezflächen; obere und untere Hälfte gegeneinander verdreht, nur durch Drehachsen (3 und 2) verknüpft. Geschlossene, chirale Form – beim Quarz unterscheidet sie Rechts- und Linksquarz.',
+      'Six trapezoid faces; the halves are twisted against each other and related only by rotation axes (3 and 2). A closed, chiral form – in quartz it distinguishes right- from left-handed crystals.',
+      'Six faces trapézoïdales ; les moitiés sont tordues l’une par rapport à l’autre et reliées seulement par des axes de rotation (3 et 2). Forme fermée et chirale – chez le quartz, elle distingue quartz droit et gauche.',
+      'Seis caras trapezoidales; las mitades están giradas entre sí y relacionadas solo por ejes de rotación (3 y 2). Forma cerrada y quiral: en el cuarzo distingue cristales dextros y levógiros.'),
+    'hexag. Prisma': L('Sechs Flächen parallel zu c mit sechseckigem Querschnitt. Offene Form.',
+      'Six faces parallel to c with a hexagonal cross-section. An open form.',
+      'Six faces parallèles à c, de section hexagonale. Forme ouverte.',
+      'Seis caras paralelas a c, de sección hexagonal. Forma abierta.'),
+    'hexag. Pyramide': L('Sechs Flächen, die sich in einem Punkt auf der Hauptachse treffen. Offene Form.',
+      'Six faces meeting at a point on the principal axis. An open form.',
+      'Six faces se rejoignant en un point de l’axe principal. Forme ouverte.',
+      'Seis caras que se encuentran en un punto del eje principal. Forma abierta.'),
+    'hexag. Dipyramide': L('Zwölf Flächen: zwei hexagonale Pyramiden Basis an Basis. Geschlossene Form.',
+      'Twelve faces: two hexagonal pyramids joined base to base. A closed form.',
+      'Douze faces : deux pyramides hexagonales accolées par la base. Forme fermée.',
+      'Doce caras: dos pirámides hexagonales unidas por la base. Forma cerrada.'),
+    'hexag. Trapezoeder': L('Zwölf Trapezflächen; obere und untere Hälfte verdreht, nur Drehachsen (6 und 2). Geschlossene, chirale Form.',
+      'Twelve trapezoid faces; the halves are twisted, related only by rotation axes (6 and 2). A closed, chiral form.',
+      'Douze faces trapézoïdales ; moitiés tordues, reliées seulement par des axes de rotation (6 et 2). Forme fermée et chirale.',
+      'Doce caras trapezoidales; mitades giradas, relacionadas solo por ejes de rotación (6 y 2). Forma cerrada y quiral.'),
+    'dihexag. Dipyramide': L('24 Flächen: zwei dihexagonale Pyramiden über eine Spiegelebene ⊥ c – die allgemeine Form der Klasse 6/mmm. Geschlossene Form.',
+      '24 faces: two dihexagonal pyramids across a mirror plane ⊥ c – the general form of class 6/mmm. A closed form.',
+      '24 faces : deux pyramides dihexagonales de part et d’autre d’un plan miroir ⊥ c – la forme générale de la classe 6/mmm. Forme fermée.',
+      '24 caras: dos pirámides dihexagonales a ambos lados de un plano de reflexión ⊥ c; la forma general de la clase 6/mmm. Forma cerrada.'),
+    'Rhomboeder': L('Sechs kongruente Rhomben, drei oben und drei unten um 60° versetzt – wie ein entlang einer Raumdiagonale gestauchter oder gestreckter Würfel. Geschlossene Form.',
+      'Six congruent rhombs, three above and three below, offset by 60° – like a cube squashed or stretched along a body diagonal. A closed form.',
+      'Six losanges identiques, trois en haut et trois en bas décalés de 60° – comme un cube aplati ou étiré selon une diagonale. Forme fermée.',
+      'Seis rombos iguales, tres arriba y tres abajo desplazados 60°: como un cubo achatado o estirado según una diagonal. Forma cerrada.'),
+    'ditrig. Skalenoeder': L('Zwölf ungleichseitige Dreiecke; die Mittelkanten laufen im Zickzack um den Kristall. Allgemeine Form der Klasse 3̄m, typisch für Calcit. Geschlossene Form.',
+      'Twelve scalene triangles; the middle edges zigzag around the crystal. The general form of class 3̄m, typical of calcite. A closed form.',
+      'Douze triangles scalènes ; les arêtes médianes forment un zigzag autour du cristal. Forme générale de la classe 3̄m, typique de la calcite. Forme fermée.',
+      'Doce triángulos escalenos; las aristas medias forman un zigzag alrededor del cristal. Forma general de la clase 3̄m, típica de la calcita. Forma cerrada.'),
+    'Würfel (Hexaeder)': L('Sechs Quadrate mit Flächennormalen entlang ⟨100⟩. Geschlossene Form; kommt in allen fünf kubischen Klassen vor.',
+      'Six squares with face normals along ⟨100⟩. A closed form; occurs in all five cubic classes.',
+      'Six carrés de normales selon ⟨100⟩. Forme fermée ; existe dans les cinq classes cubiques.',
+      'Seis cuadrados con normales según ⟨100⟩. Forma cerrada; aparece en las cinco clases cúbicas.'),
+    'Tetraeder': L('Vier gleichseitige Dreiecke mit Normalen entlang jeder zweiten ⟨111⟩-Richtung. Geschlossene Form der Klassen 23 und 4̄3m; das Gegenstück {1̄11} ist das „negative“ Tetraeder.',
+      'Four equilateral triangles with normals along alternate ⟨111⟩ directions. A closed form of classes 23 and 4̄3m; its counterpart {1̄11} is the “negative” tetrahedron.',
+      'Quatre triangles équilatéraux de normales selon une direction ⟨111⟩ sur deux. Forme fermée des classes 23 et 4̄3m ; son homologue {1̄11} est le tétraèdre « négatif ».',
+      'Cuatro triángulos equiláteros con normales según direcciones ⟨111⟩ alternas. Forma cerrada de las clases 23 y 4̄3m; su homólogo {1̄11} es el tetraedro «negativo».'),
+    'Oktaeder': L('Acht gleichseitige Dreiecke mit Normalen entlang ⟨111⟩. Geschlossene Form.',
+      'Eight equilateral triangles with normals along ⟨111⟩. A closed form.',
+      'Huit triangles équilatéraux de normales selon ⟨111⟩. Forme fermée.',
+      'Ocho triángulos equiláteros con normales según ⟨111⟩. Forma cerrada.'),
+    'Pentagondodekaeder': L('Zwölf (nicht regelmäßige) Fünfecke {hk0}; die Symmetrie erlaubt keine regulären Fünfecke. Typisch für Pyrit („Pyritoeder“). Geschlossene Form.',
+      'Twelve (non-regular) pentagons {hk0}; crystal symmetry forbids regular pentagons. Typical of pyrite (“pyritohedron”). A closed form.',
+      'Douze pentagones (non réguliers) {hk0} ; la symétrie cristalline interdit les pentagones réguliers. Typique de la pyrite (« pyritoèdre »). Forme fermée.',
+      'Doce pentágonos (no regulares) {hk0}; la simetría cristalina prohíbe los pentágonos regulares. Típico de la pirita («piritoedro»). Forma cerrada.'),
+    'Disdodekaeder': L('24 Flächen {hkl} – die allgemeine Form der Klasse m3̄ (Diploid). Geschlossene Form.',
+      '24 faces {hkl} – the general form of class m3̄ (diploid). A closed form.',
+      '24 faces {hkl} – la forme générale de la classe m3̄ (diploèdre). Forme fermée.',
+      '24 caras {hkl}: la forma general de la clase m3̄ (diploedro). Forma cerrada.'),
+    'Pentagonikositetraeder (Gyroid)': L('24 Fünfecksflächen – die allgemeine Form der Klasse 432. Nur Drehachsen, daher chiral: Rechts- und Linksform.',
+      '24 pentagonal faces – the general form of class 432. Rotation axes only, hence chiral: right- and left-handed variants.',
+      '24 faces pentagonales – la forme générale de la classe 432. Seulement des axes de rotation, donc chirale : variantes droite et gauche.',
+      '24 caras pentagonales: la forma general de la clase 432. Solo ejes de rotación, por tanto quiral: variantes dextra y levógira.'),
+    'Tristetraeder (Triakistetraeder)': L('Zwölf Flächen {hll}: auf jeder Tetraederfläche sitzen drei flache Flächen. Geschlossene Form der Klassen 23 und 4̄3m.',
+      'Twelve faces {hll}: three low faces sit on each face of a tetrahedron. A closed form of classes 23 and 4̄3m.',
+      'Douze faces {hll} : trois faces basses sur chaque face d’un tétraèdre. Forme fermée des classes 23 et 4̄3m.',
+      'Doce caras {hll}: tres caras bajas sobre cada cara de un tetraedro. Forma cerrada de las clases 23 y 4̄3m.'),
+    'Rhombendodekaeder': L('Zwölf Rhomben mit Normalen entlang ⟨110⟩. Geschlossene Form, typisch für Granat.',
+      'Twelve rhombs with normals along ⟨110⟩. A closed form, typical of garnet.',
+      'Douze losanges de normales selon ⟨110⟩. Forme fermée, typique du grenat.',
+      'Doce rombos con normales según ⟨110⟩. Forma cerrada, típica del granate.'),
+    'Deltoidikositetraeder': L('24 Drachenvierecke (Deltoide) {hll} mit h > l. Geschlossene Form, typisch für Granat und Leucit.',
+      '24 kite-shaped faces (deltoids) {hll} with h > l. A closed form, typical of garnet and leucite.',
+      '24 faces en cerf-volant (deltoïdes) {hll} avec h > l. Forme fermée, typique du grenat et de la leucite.',
+      '24 caras en forma de cometa (deltoides) {hll} con h > l. Forma cerrada, típica del granate y la leucita.'),
+    '__3rd': L('„Allgemeine Lage“: Die Flächen liegen schräg um die Hauptachse – weder senkrecht zu den horizontalen a-Achsen noch zu deren Winkelhalbierenden; die Indizes {hkl} sind allgemein. Mit genau dieser Flächenzahl tritt sie nur auf, wenn vertikale Spiegelebenen und 2-zählige Achsen ⊥ Hauptachse fehlen (sonst hätte dieselbe Form doppelt so viele Flächen) – sie verrät also die niedrigere Symmetrie der Klasse.',
+      '“General position”: the faces lie obliquely around the principal axis – normal neither to the horizontal a axes nor to their bisectors; the indices {hkl} are general. It has exactly this number of faces only when vertical mirror planes and twofold axes ⊥ the principal axis are absent (otherwise the same form would have twice as many faces) – it therefore reveals the lower symmetry of the class.',
+      '« Position générale » : les faces sont obliques autour de l’axe principal – perpendiculaires ni aux axes a horizontaux ni à leurs bissectrices ; les indices {hkl} sont quelconques. Une telle forme n’a exactement ce nombre de faces que si les plans miroirs verticaux et les axes d’ordre 2 ⊥ à l’axe principal sont absents (sinon la même forme aurait deux fois plus de faces) – elle révèle donc la symétrie plus basse de la classe.',
+      '«Posición general»: las caras están oblicuas alrededor del eje principal, ni perpendiculares a los ejes a horizontales ni a sus bisectrices; los índices {hkl} son generales. Una forma así solo tiene exactamente este número de caras si faltan planos de reflexión verticales y ejes binarios ⊥ al eje principal (si no, la misma forma tendría el doble de caras); por tanto, revela la simetría más baja de la clase.')
+  };
+})();
+I18N.formDef = (de, lang) => {
+  const m = de.match(/^(.*) 3\. Stellung$/);
+  const base = m ? m[1] : de, d = I18N.formDefs[base];
+  if (!d) return '';
+  return d[lang] + (m ? '<br><br>' + I18N.formDefs.__3rd[lang] : '');
+};
+
+I18N.stereoHelp = {
+  de: { t: 'Was ist ein Flächenpol?', s: ['Man denkt sich den Kristall im Mittelpunkt einer großen Kugel.', 'Auf jeder Fläche errichtet man die Senkrechte (Flächennormale). Wo sie die Kugel durchstößt, liegt der <b>Flächenpol P</b>.', 'P wird mit dem Südpol S verbunden; der Schnittpunkt <b>P′</b> mit der Äquatorebene ist der Punkt im Stereogramm (●). Pole der unteren Halbkugel projiziert man zum Nordpol (○).'],
+    r: '<b>Faustregeln:</b> Pol in der Mitte = waagerechte Fläche; Pol auf dem Grundkreis = senkrechte Fläche (z. B. Prisma); je steiler die Fläche, desto weiter außen. Größe und Form der Flächen spielen keine Rolle – nur ihre Richtung. Deshalb zeigt das Polmuster die Symmetrie unverfälscht.',
+    l: { P: 'Pol', S: 'Südpol', E: 'Äquatorebene' } },
+  en: { t: 'What is a face pole?', s: ['Imagine the crystal at the centre of a large sphere.', 'Erect the perpendicular (face normal) on each face. Where it pierces the sphere lies the <b>face pole P</b>.', 'Join P to the south pole S; the intersection <b>P′</b> with the equatorial plane is the point in the stereogram (●). Poles of the lower hemisphere are projected towards the north pole (○).'],
+    r: '<b>Rules of thumb:</b> pole at the centre = horizontal face; pole on the primitive circle = vertical face (e.g. a prism); the steeper the face, the further out its pole. Face size and shape do not matter – only the orientation. That is why the pole pattern shows the symmetry undistorted.',
+    l: { P: 'pole', S: 'south pole', E: 'equatorial plane' } },
+  fr: { t: 'Qu’est-ce qu’un pôle de face ?', s: ['On imagine le cristal au centre d’une grande sphère.', 'Sur chaque face, on élève la perpendiculaire (normale à la face). Là où elle perce la sphère se trouve le <b>pôle P</b> de la face.', 'On relie P au pôle sud S ; l’intersection <b>P′</b> avec le plan équatorial est le point du stéréogramme (●). Les pôles de l’hémisphère inférieur sont projetés vers le pôle nord (○).'],
+    r: '<b>Repères :</b> pôle au centre = face horizontale ; pôle sur le cercle primitif = face verticale (p. ex. un prisme) ; plus la face est raide, plus son pôle est à l’extérieur. Taille et forme des faces n’interviennent pas – seule leur orientation compte. C’est pourquoi la figure des pôles montre la symétrie sans distorsion.',
+    l: { P: 'pôle', S: 'pôle sud', E: 'plan équatorial' } },
+  es: { t: '¿Qué es un polo de cara?', s: ['Se imagina el cristal en el centro de una gran esfera.', 'Sobre cada cara se levanta la perpendicular (normal a la cara). Donde atraviesa la esfera se encuentra el <b>polo P</b> de la cara.', 'Se une P con el polo sur S; la intersección <b>P′</b> con el plano ecuatorial es el punto del estereograma (●). Los polos del hemisferio inferior se proyectan hacia el polo norte (○).'],
+    r: '<b>Reglas prácticas:</b> polo en el centro = cara horizontal; polo en el círculo primitivo = cara vertical (p. ej. un prisma); cuanto más inclinada la cara, más afuera su polo. El tamaño y la forma de las caras no importan, solo su orientación. Por eso el patrón de polos muestra la simetría sin distorsión.',
+    l: { P: 'polo', S: 'polo sur', E: 'plano ecuatorial' } }
+};
+
+// ===== Kristallklassen: Geometrie- und Symmetrie-Kern (ohne DOM) =====
+const CORE = (() => {
+  // ---------- lineare Algebra ----------
+  const mul = (A, B) => A.map((r, i) => [0, 1, 2].map(j => A[i][0] * B[0][j] + A[i][1] * B[1][j] + A[i][2] * B[2][j]));
+  const mv = (A, v) => A.map(r => r[0] * v[0] + r[1] * v[1] + r[2] * v[2]);
+  const vm = (v, A) => [0, 1, 2].map(j => v[0] * A[0][j] + v[1] * A[1][j] + v[2] * A[2][j]);
+  const tr = A => [0, 1, 2].map(i => [0, 1, 2].map(j => A[j][i]));
+  const det = A => A[0][0] * (A[1][1] * A[2][2] - A[1][2] * A[2][1]) - A[0][1] * (A[1][0] * A[2][2] - A[1][2] * A[2][0]) + A[0][2] * (A[1][0] * A[2][1] - A[1][1] * A[2][0]);
+  const inv = A => {
+    const d = det(A);
+    const c = (i, j) => {
+      const m = [0, 1, 2].filter(x => x !== i), n = [0, 1, 2].filter(x => x !== j);
+      return ((i + j) % 2 ? -1 : 1) * (A[m[0]][n[0]] * A[m[1]][n[1]] - A[m[0]][n[1]] * A[m[1]][n[0]]);
+    };
+    return [0, 1, 2].map(i => [0, 1, 2].map(j => c(j, i) / d));
+  };
+  const dot = (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+  const cross = (a, b) => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
+  const add = (a, b) => [a[0] + b[0], a[1] + b[1], a[2] + b[2]];
+  const sub = (a, b) => [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
+  const sc = (a, s) => [a[0] * s, a[1] * s, a[2] * s];
+  const len = a => Math.hypot(a[0], a[1], a[2]);
+  const nrm = a => sc(a, 1 / len(a));
+
+  // ---------- Symmetrieoperationen im ITA-Stil ("-y,x-y,z") ----------
+  function parseOp(s) {
+    return s.split(',').map(t => {
+      const v = [0, 0, 0], re = /([+-]?)(\d*)([xyz])/g;
+      let m;
+      while ((m = re.exec(t.trim()))) v['xyz'.indexOf(m[3])] += (m[1] === '-' ? -1 : 1) * (m[2] ? +m[2] : 1);
+      return v;
+    });
+  }
+  function genGroup(gens) {
+    const I = [[1, 0, 0], [0, 1, 0], [0, 0, 1]], key = m => m.flat().join(',');
+    const list = [I], seen = new Set([key(I)]);
+    const G = gens.map(parseOp);
+    for (let i = 0; i < list.length; i++)
+      for (const g of G) {
+        const p = mul(list[i], g), k = key(p);
+        if (!seen.has(k)) { seen.add(k); list.push(p); }
+      }
+    return list;
+  }
+
+  // ---------- Gitter ----------
+  function latticeM([a, b, c, al, be, ga]) {
+    // c vertikal (z), b in der yz-Ebene – wie in klassischen Kristallzeichnungen
+    const r = Math.PI / 180, ca = Math.cos(al * r), sa = Math.sin(al * r), cb = Math.cos(be * r), cg = Math.cos(ga * r);
+    const az = a * cb, ay = a * (cg - cb * ca) / sa, ax = Math.sqrt(a * a - ay * ay - az * az);
+    return [[ax, 0, 0], [ay, b * sa, 0], [az, b * ca, c]]; // Spalten = a, b, c (kartesisch)
+  }
+
+  // ---------- Halbraumschnitt ----------
+  function polyhedron(planes) {
+    const verts = [], EPS = 1e-7, n = planes.length;
+    for (let i = 0; i < n; i++) for (let j = i + 1; j < n; j++) {
+      const cij = cross(planes[i].n, planes[j].n);
+      if (len(cij) < 1e-9) continue;
+      for (let k = j + 1; k < n; k++) {
+        const D = dot(planes[k].n, cij);
+        if (Math.abs(D) < 1e-9) continue;
+        const p = sc(add(add(sc(cross(planes[j].n, planes[k].n), planes[i].d), sc(cross(planes[k].n, planes[i].n), planes[j].d)), sc(cij, planes[k].d)), 1 / D);
+        let ok = true;
+        for (const q of planes) if (dot(q.n, p) > q.d + EPS) { ok = false; break; }
+        if (!ok) continue;
+        if (!verts.some(v => len(sub(v, p)) < 1e-6)) verts.push(p);
+      }
+    }
+    const faces = [];
+    planes.forEach((pl, pi) => {
+      const idx = verts.map((v, i) => i).filter(i => Math.abs(dot(pl.n, verts[i]) - pl.d) < 1e-6);
+      if (idx.length < 3) return;
+      const c = sc(idx.reduce((s, i) => add(s, verts[i]), [0, 0, 0]), 1 / idx.length);
+      const u = nrm(sub(verts[idx[0]], c)), w = cross(pl.n, u);
+      idx.sort((a, b) => {
+        const da = sub(verts[a], c), db = sub(verts[b], c);
+        return Math.atan2(dot(da, w), dot(da, u)) - Math.atan2(dot(db, w), dot(db, u));
+      });
+      // Flächeninhalt
+      let A = 0;
+      for (let t = 1; t < idx.length - 1; t++) A += len(cross(sub(verts[idx[t]], verts[idx[0]]), sub(verts[idx[t + 1]], verts[idx[0]]))) / 2;
+      faces.push({ plane: pi, idx, area: A, centroid: c });
+    });
+    return { verts, faces };
+  }
+
+  // ---------- Ganzzahlige Indizes ----------
+  function toInts(v, maxm = 12) {
+    const m0 = Math.max(...v.map(Math.abs));
+    const u = v.map(x => x / m0);
+    for (let m = 1; m <= maxm; m++) {
+      const w = u.map(x => x * m);
+      if (w.every(x => Math.abs(x - Math.round(x)) < 2e-3)) return w.map(x => Math.round(x) || 0);
+    }
+    return u.map(x => +x.toFixed(2));
+  }
+  const gcd = (a, b) => b ? gcd(b, a % b) : Math.abs(a);
+  function reduce(v) { const g = v.reduce((a, b) => gcd(a, b), 0) || 1; return v.map(x => x / g); }
+  const toHexDir = ([u, v, w]) => reduce(toInts([2 * u - v, 2 * v - u, -(u + v), 3 * w].map(x => x)).map(Math.round));
+  const toHexPlane = ([h, k, l]) => [h, k, -(h + k), l];
+
+  // ---------- Symmetrie-Analyse ----------
+  const near = (a, b, e = 1e-6) => Math.abs(a - b) < e;
+  function canon(v) { // Richtung ohne Vorzeichen
+    for (const c of v) { if (Math.abs(c) > 1e-6) return c < 0 ? sc(v, -1) : v; }
+    return v;
+  }
+  function axisOf(Q, theta) {
+    if (near(theta, Math.PI, 1e-4)) {
+      const S = Q.map((r, i) => r.map((x, j) => (x + (i === j ? 1 : 0)) / 2)); // (Q+I)/2 = a a^T
+      let best = 0;
+      for (let j = 1; j < 3; j++) if (len(S.map(r => r[j])) > len(S.map(r => r[best]))) best = j;
+      return nrm(S.map(r => r[best]));
+    }
+    return nrm([Q[2][1] - Q[1][2], Q[0][2] - Q[2][0], Q[1][0] - Q[0][1]]);
+  }
+  function analyze(Rc, M, hex) {
+    const axes = []; // {dir, n (proper max), r (rotoinv max)}
+    const mirrors = [];
+    let inversion = false;
+    const findAxis = d => axes.find(a => len(sub(a.dir, d)) < 1e-5);
+    Rc.forEach(R => {
+      const s = det(R) > 0 ? 1 : -1;
+      const Q = R.map(r => r.map(x => x * s));
+      const t = Math.max(-1, Math.min(3, Q[0][0] + Q[1][1] + Q[2][2]));
+      const th = Math.acos(Math.max(-1, Math.min(1, (t - 1) / 2)));
+      if (th < 1e-4) { if (s < 0) inversion = true; return; }
+      const ord = Math.round(2 * Math.PI / th);
+      const d = canon(axisOf(Q, th));
+      if (s < 0 && ord === 2) { if (!mirrors.some(m => len(sub(m.dir, d)) < 1e-5)) mirrors.push({ dir: d }); return; }
+      let a = findAxis(d);
+      if (!a) { a = { dir: d, n: 1, r: 0 }; axes.push(a); }
+      if (s > 0) a.n = Math.max(a.n, ord); else a.r = Math.max(a.r, ord);
+    });
+    const Mi = inv(M);
+    const dirLabel = d => {
+      let u = reduce(toInts(mv(Mi, d)));
+      if (hex) u = toHexDir(u);
+      return u;
+    };
+    const planeLabel = d => {
+      let h = reduce(toInts(vm(d, M)));
+      if (hex) h = toHexPlane(h);
+      return h;
+    };
+    const elems = [];
+    axes.forEach(a => {
+      let sym, kind, order;
+      if (a.r === 6 && a.n === 3) { sym = '-6'; kind = 'rotoinv'; order = 6; }
+      else if (a.r === 4 && a.n === 2) { sym = '-4'; kind = 'rotoinv'; order = 4; }
+      else if (a.r === 3 && a.n === 3) { sym = '-3'; kind = 'rotoinv'; order = 3; }
+      else if (a.n >= 2) { sym = String(a.n); kind = 'rot'; order = a.n; }
+      else return;
+      elems.push({ kind, order, sym, dir: a.dir, idx: dirLabel(a.dir) });
+    });
+    mirrors.forEach(m => elems.push({ kind: 'mirror', order: 2, sym: 'm', dir: m.dir, idx: planeLabel(m.dir) }));
+    if (inversion) elems.push({ kind: 'inv', order: 2, sym: '-1', dir: [0, 0, 1], idx: null });
+    // Familien (symmetrisch äquivalente Elemente)
+    const fams = [];
+    elems.forEach(e => {
+      const f = fams.find(f => f.sym === e.sym && f.kind === e.kind && f.members[0].dir && Rc.some(R => {
+        const r = mv(R, f.members[0].dir);
+        return len(sub(r, e.dir)) < 1e-5 || len(add(r, e.dir)) < 1e-5;
+      }));
+      if (f) f.members.push(e); else fams.push({ sym: e.sym, kind: e.kind, order: e.order, members: [e] });
+    });
+    const score = v => v ? v.filter(x => x < 0).length * 10 + v.reduce((s, x) => s + Math.abs(x), 0) + v.reduce((s, x, i) => s + (x === 0 ? 0 : 0.01 * (i + 1)), 0) : 0;
+    fams.forEach(f => {
+      f.members.sort((a, b) => score(a.idx) - score(b.idx));
+      f.rep = f.members[0].idx;
+      f.members.forEach(e => e.fam = f);
+    });
+    const rank = f => ({ rot: 0, rotoinv: 1, mirror: 2, inv: 3 })[f.kind] * 10 - f.order;
+    fams.sort((a, b) => rank(a) - rank(b));
+    return { elems, fams, inversion };
+  }
+
+  // ---------- Kristall aufbauen ----------
+  function build(cls, ex) {
+    const hex = cls.system === 'trigonal' || cls.system === 'hexagonal';
+    const M = latticeM(ex.lat), Mi = inv(M), B = tr(Mi);
+    const G = genGroup(cls.gens);
+    const Gi = G.map(inv);
+    const planes = [], forms = [];
+    ex.forms.forEach((f, fi) => {
+      const orbit = [];
+      Gi.forEach(W => {
+        const h = vm(f.hkl, W).map(x => Math.round(x) || 0);
+        if (!orbit.some(o => o[0] === h[0] && o[1] === h[1] && o[2] === h[2])) orbit.push(h);
+      });
+      forms.push({ ...f, mult: orbit.length, faces: [] });
+      orbit.forEach(h => planes.push({ n: nrm(mv(B, h)), d: f.d, form: fi, hkl: h }));
+    });
+    const P = polyhedron(planes);
+    const rmax = Math.max(...P.verts.map(len));
+    P.verts = P.verts.map(v => sc(v, 1 / rmax));
+    planes.forEach(p => p.d /= rmax);
+    P.faces.forEach(f => { f.centroid = sc(f.centroid, 1 / rmax); f.area /= rmax * rmax; });
+    P.faces.forEach((f, i) => { const pl = planes[f.plane]; f.n = pl.n; f.form = pl.form; f.hkl = pl.hkl; forms[pl.form].faces.push(i); });
+    const Rc = G.map(W => mul(mul(M, W), Mi));
+    const sym = analyze(Rc, M, hex);
+    // Kristallachsen (für die Anzeige, normiert)
+    const axesABC = [0, 1, 2].map(j => nrm([M[0][j], M[1][j], M[2][j]]));
+    return { cls, ex, hex, M, G, Rc, planes, poly: P, forms, sym, axesABC, order: G.length };
+  }
+
+  const fmtIdx = (v, br) => {
+    if (!v) return '';
+    const s = v.map(x => x < 0 ? '̅' + '' + (-x) : String(x)); // placeholder, overridden in UI
+    return s;
+  };
+
+  return { build, genGroup, parseOp, latticeM, mul, mv, vm, inv, det, tr, dot, cross, add, sub, sc, len, nrm, toHexPlane };
+})();
+if (false) module.exports = CORE;
+
+// ===== SVG-Vorschau (klinographische Projektion) =====
+const THUMB = (() => {
+  // kristall-kartesisch (x,y,z) -> Anzeige (x rechts, y oben, z zum Betrachter): (y, z, x)
+  const toView = v => [v[1], v[2], v[0]];
+  function viewMatrix(phiDeg, tiltDeg) {
+    const p = phiDeg * Math.PI / 180, t = tiltDeg * Math.PI / 180;
+    const Ry = [[Math.cos(p), 0, Math.sin(p)], [0, 1, 0], [-Math.sin(p), 0, Math.cos(p)]];
+    const Rx = [[1, 0, 0], [0, Math.cos(t), -Math.sin(t)], [0, Math.sin(t), Math.cos(t)]];
+    return CORE.mul(Rx, Ry);
+  }
+  function svg(X, opts = {}) {
+    const size = opts.size || 120, tint = opts.tint || [70, 110, 170];
+    const V = opts.view || viewMatrix(-20, 12);
+    const P = X.poly.verts.map(v => CORE.mv(V, toView(v)));
+    const L = CORE.nrm([-0.45, 0.65, 0.75]);
+    const s = size * 0.43, c = size / 2;
+    let out = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${size} ${size}" width="${size}" height="${size}">`;
+    X.poly.faces.forEach(f => {
+      const n = CORE.mv(V, toView(f.n));
+      if (n[2] <= 1e-6) return;
+      const b = 0.42 + 0.58 * Math.max(0, CORE.dot(n, L));
+      const col = tint.map(x => Math.round(255 - (255 - x) * (1 - b) * 0.9 - (1 - b) * 40));
+      const pts = f.idx.map(i => `${(c + P[i][0] * s).toFixed(1)},${(c - P[i][1] * s).toFixed(1)}`).join(' ');
+      out += `<polygon points="${pts}" fill="rgb(${col.join(',')})" stroke="#1d2433" stroke-width="${opts.stroke || 1}" stroke-linejoin="round"/>`;
+    });
+    return out + '</svg>';
+  }
+  return { svg, viewMatrix, toView };
+})();
+if (false) module.exports = THUMB;
+
+// ===== Kristallklassen: Anwendung =====
+(() => {
+  const SYS_TINT = { triklin: [150, 118, 82], monoklin: [72, 140, 108], orthorhombisch: [60, 128, 160], tetragonal: [104, 96, 176],
+    trigonal: [168, 84, 120], hexagonal: [186, 112, 56], kubisch: [64, 104, 176] };
+  const ORDER_COL = { 2: 0x2f6fde, 3: 0x1f9d55, 4: 0xd6453d, 6: 0x8e44c9 };
+  const ORDER_CSS = { 2: '#2f6fde', 3: '#1f9d55', 4: '#d6453d', 6: '#8e44c9' };
+  const MIRROR_COL = 0xe8960c, INV_COL = 0x222222;
+  const FORM_PAL = ['#8fb3e0', '#f0c178', '#93d3ac', '#e79ba3', '#bfa4e6', '#9fd3e3', '#e3cf74', '#b8c79a', '#efafd2'];
+  const LAUE = { '1': '-1', '-1': '-1', '2': '2/m', m: '2/m', '2/m': '2/m', '222': 'mmm', mm2: 'mmm', mmm: 'mmm', '4': '4/m', '-4': '4/m', '4/m': '4/m',
+    '422': '4/mmm', '4mm': '4/mmm', '-42m': '4/mmm', '4/mmm': '4/mmm', '3': '-3', '-3': '-3', '32': '-3m', '3m': '-3m', '-3m': '-3m',
+    '6': '6/m', '-6': '6/m', '6/m': '6/m', '622': '6/mmm', '6mm': '6/mmm', '-6m2': '6/mmm', '6/mmm': '6/mmm', '23': 'm-3', 'm-3': 'm-3', '432': 'm-3m', '-43m': 'm-3m', 'm-3m': 'm-3m' };
+  const POLAR = new Set(['1', '2', 'm', 'mm2', '4', '4mm', '3', '3m', '6', '6mm']);
+
+  // ---------- Formatierung ----------
+  const hmHTML = s => s.replace(/m/g, '<i>m</i>').replace(/-(\d)/g, '<span class="ob">$1</span>');
+  const schHTML = s => s.replace(/(<[^>]+>)|([A-Za-z]+)/g, (m, tag, w) => tag || `<i>${w}</i>`);
+  const noteHTML = s => s.replace(/([{(\[])([-\d]+)([})\]])/g, (m, a, b, c) => a + hmHTML(b) + c);
+  const num = x => x < 0 ? `<span class="ob">${-x}</span>` : String(x);
+  const idxHTML = v => v.map(num).join(Math.max(...v.map(Math.abs)) > 9 ? ' ' : '');
+  const planeIdx = (X, h) => X.hex ? CORE.toHexPlane(h) : h;
+
+  // ---------- Sprache ----------
+  let LANG = (() => {
+    try { const s = localStorage.getItem('kk-lang'); if (I18N.LANGS.includes(s)) return s; } catch (_) {}
+    if (typeof KK_DEFAULT_LANG !== 'undefined') return KK_DEFAULT_LANG;
+    const n = (navigator.language || 'de').slice(0, 2);
+    return I18N.LANGS.includes(n) ? n : 'de';
+  })();
+  const t = (k, vars) => { let s = I18N.ui[k] ? I18N.ui[k][LANG] : k; if (vars) for (const v in vars) s = s.replace('{' + v + '}', vars[v]); return s; };
+  const trClass = c => I18N.classNames[c.id][LANG];
+  const trSys = s => I18N.systems[s][LANG];
+  const trForm = n => I18N.formName(n, LANG);
+  const trMin = n => (I18N.minerals[n] || {})[LANG] || n;
+  const trNote = e => (I18N.notes[e.c.id + '#' + e.i] || {})[LANG] || '';
+  function applyStatic() {
+    document.documentElement.lang = LANG;
+    document.querySelectorAll('[data-i18n]').forEach(el => el.innerHTML = noteHTML(t(el.dataset.i18n)));
+    document.querySelectorAll('[data-i18n-title]').forEach(el => el.title = t(el.dataset.i18nTitle));
+    document.title = t('title');
+    const g = document.getElementById('gallery');
+    document.getElementById('collapseBtn').textContent = t(g.classList.contains('collapsed') ? 'expand' : 'collapse');
+    document.getElementById('hint').textContent = t(quiz.on ? 'hintQuiz' : 'hint');
+    document.getElementById('quizBtn').textContent = t(quiz.on ? 'endQuiz' : 'quiz');
+    document.getElementById('quizBtn').classList.toggle('on', quiz.on);
+    document.getElementById('langs').innerHTML = I18N.LANGS.map(l => `<button data-l="${l}" class="${l === LANG ? 'on' : ''}">${l.toUpperCase()}</button>`).join('');
+    document.querySelectorAll('#langs button').forEach(b => b.onclick = () => setLang(b.dataset.l));
+  }
+  function setLang(l) {
+    LANG = l; try { localStorage.setItem('kk-lang', l); } catch (_) {}
+    applyStatic(); renderGallery();
+    if (state.X) { renderClass(); renderElements(); renderForms(); renderStereoNote(); if (quiz.on) renderQuiz(); }
+  }
+  const quiz = { on: false, entry: null, attempts: 0, solved: false, revealed: false, score: 0, total: 0, wrong: new Set() };
+
+  // ---------- Einträge ----------
+  const ENTRIES = [];
+  CLASSES.forEach(c => c.examples.forEach((ex, i) => ENTRIES.push({ c, ex, i, slug: c.id.replace(/-/g, 'bar').replace('/', '') + (i ? '-' + (i + 1) : '') })));
+  const cache = new Map();
+  const getX = e => { if (!cache.has(e)) cache.set(e, CORE.build(e.c, e.ex)); return cache.get(e); };
+
+  // ---------- Galerie ----------
+  const sysEl = document.getElementById('systems');
+  const cardEls = new Map(), thumbCache = new Map();
+  function renderGallery() {
+    sysEl.innerHTML = ''; cardEls.clear();
+    SYSTEMS.forEach(sys => {
+      const box = document.createElement('div');
+      box.className = 'sysbox';
+      box.style.setProperty('--sys', `rgb(${SYS_TINT[sys].join(',')})`);
+      box.innerHTML = `<h3>${trSys(sys)}</h3><div class="cards"></div>`;
+      const cards = box.querySelector('.cards');
+      ENTRIES.filter(e => e.c.system === sys).forEach(e => {
+        const b = document.createElement('button');
+        b.className = 'card' + (state.entry === e ? ' active' : '');
+        if (!thumbCache.has(e)) thumbCache.set(e, THUMB.svg(getX(e), { size: 120, tint: SYS_TINT[sys], stroke: 1.6, view: e.ex.view ? THUMB.viewMatrix(...e.ex.view) : undefined }));
+        b.innerHTML = thumbCache.get(e) + `<div class="hm">${hmHTML(e.c.hm)}</div><div class="mn">${trMin(e.ex.name)}</div>`;
+        b.title = `${e.c.hm} – ${trClass(e.c)} – ${trMin(e.ex.name)}`;
+        b.onclick = () => select(e, true);
+        cards.appendChild(b);
+        cardEls.set(e, b);
+      });
+      sysEl.appendChild(box);
+    });
+  }
+  document.getElementById('collapseBtn').onclick = ev => {
+    const g = document.getElementById('gallery');
+    g.classList.toggle('collapsed');
+    ev.target.textContent = t(g.classList.contains('collapsed') ? 'expand' : 'collapse');
+  };
+
+  // ---------- three.js ----------
+  const wrap = document.getElementById('wrap');
+  const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+  renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
+  wrap.insertBefore(renderer.domElement, wrap.firstChild);
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(28, 1, 0.1, 100);
+  let camDist = 7;
+  camera.position.set(0, 0, camDist);
+  scene.add(new THREE.AmbientLight(0xffffff, 0.62));
+  const dl = new THREE.DirectionalLight(0xffffff, 0.62); dl.position.set(-2, 3, 4); scene.add(dl);
+  const dl2 = new THREE.DirectionalLight(0xffffff, 0.22); dl2.position.set(3, -2, -2); scene.add(dl2);
+
+  const root = new THREE.Group(); scene.add(root);
+  const crystalG = new THREE.Group(); crystalG.matrixAutoUpdate = false; root.add(crystalG);
+  const ghostG = new THREE.Group(); root.add(ghostG);
+  const elemG = new THREE.Group(); root.add(elemG);
+  const axesG = new THREE.Group(); root.add(axesG);
+
+  const T = v => new THREE.Vector3(v[1], v[2], v[0]); // kristall-kartesisch -> three
+
+  function resize() {
+    const w = wrap.clientWidth, h = wrap.clientHeight;
+    renderer.setSize(w, h, false);
+    camera.aspect = w / h; camera.updateProjectionMatrix();
+  }
+  new ResizeObserver(resize).observe(wrap);
+
+  // ---------- Zustand ----------
+  const state = { entry: null, X: null, famVis: [], showForms: false, showAxes: false, labels: true, spin: false, opacity: 0.55, marked: -1, opIdx: {} };
+  let crystal = null; // {front, back, edgesFront, edgesBack, faces, edges, triFace}
+  let famObjs = [];   // je Familie: Group
+  let labelSprites = [];
+
+  // ---------- Text-Sprites ----------
+  function textSprite(txt, color = '#1d2433', scale = 0.2) {
+    const bar = txt.startsWith('-'); const t = bar ? txt.slice(1) : txt;
+    const cv = document.createElement('canvas'); cv.width = 256; cv.height = 256;
+    const g = cv.getContext('2d');
+    g.font = '600 150px "IBM Plex Sans", Arial, sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle';
+    g.lineJoin = 'round'; g.lineWidth = 22; g.strokeStyle = 'rgba(255,253,248,.92)'; g.strokeText(t, 128, 142);
+    g.fillStyle = color; g.fillText(t, 128, 142);
+    if (bar) { const w = g.measureText(t).width; g.fillStyle = 'rgba(255,253,248,.92)'; g.fillRect(128 - w / 2 - 12, 30, w + 24, 34); g.fillStyle = color; g.fillRect(128 - w / 2 - 2, 40, w + 4, 13); }
+    const tex = new THREE.CanvasTexture(cv);
+    const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, depthTest: false, transparent: true }));
+    sp.scale.set(scale, scale, 1); sp.renderOrder = 10;
+    return sp;
+  }
+
+  // ---------- Symbole für Achsen ----------
+  function regularShape(n, R, rot = 0) {
+    const s = new THREE.Shape();
+    for (let i = 0; i <= n; i++) { const a = rot + i * 2 * Math.PI / n; const x = R * Math.cos(a), y = R * Math.sin(a); i ? s.lineTo(x, y) : s.moveTo(x, y); }
+    return s;
+  }
+  function lensShape(rx, ry) { const s = new THREE.Shape(); s.absellipse(0, 0, rx, ry, 0, 2 * Math.PI, false, 0); return s; }
+  function symbolSprite(sym, color) {
+    const bar = sym.startsWith('-'), n = +sym.replace('-', '');
+    const cv = document.createElement('canvas'); cv.width = cv.height = 128;
+    const g = cv.getContext('2d'), c = 64;
+    const poly = (k, R, rot, cy = c) => { g.beginPath(); for (let i = 0; i < k; i++) { const a = rot + i * 2 * Math.PI / k; g[i ? 'lineTo' : 'moveTo'](c + R * Math.cos(a), cy + R * Math.sin(a)); } g.closePath(); };
+    const shape = () => { if (n === 2) { g.beginPath(); g.ellipse(c, c, 25, 50, 0, 0, 2 * Math.PI); } else if (n === 3) poly(3, 56, -Math.PI / 2, c + 12); else if (n === 4) poly(4, 54, Math.PI / 4); else poly(6, 52, 0); };
+    shape(); g.lineWidth = 12; g.strokeStyle = 'rgba(255,253,248,.9)'; g.lineJoin = 'round'; g.stroke();
+    g.fillStyle = color; g.fill();
+    if (bar) {
+      g.fillStyle = '#fff';
+      if (n === 3) { g.beginPath(); g.arc(c, c + 10, 14, 0, 2 * Math.PI); g.fill(); }
+      else if (n === 4) { g.beginPath(); g.ellipse(c, c, 12, 24, 0, 0, 2 * Math.PI); g.fill(); }
+      else { poly(3, 26, -Math.PI / 2, c + 5); g.fill(); }
+    }
+    const tex = new THREE.CanvasTexture(cv);
+    const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, transparent: true, depthWrite: false }));
+    sp.scale.set(0.15, 0.15, 1); sp.renderOrder = 9;
+    return sp;
+  }
+  function alignZ(obj, dir) { obj.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, 1), dir.clone().normalize()); }
+
+  // ---------- Kristall aufbauen ----------
+  function disposeGroup(g) {
+    g.traverse(o => { if (o.geometry) o.geometry.dispose(); if (o.material) { (Array.isArray(o.material) ? o.material : [o.material]).forEach(m => { if (m.map) m.map.dispose(); m.dispose(); }); } });
+    while (g.children.length) g.remove(g.children[0]);
+  }
+  function faceColor(X, f) {
+    if (state.showForms) return new THREE.Color(FORM_PAL[f.form % FORM_PAL.length]);
+    const t = SYS_TINT[X.cls.system];
+    return new THREE.Color(`rgb(${t.map(x => Math.round(255 - (255 - x) * 0.42)).join(',')})`);
+  }
+  function buildCrystal() {
+    disposeGroup(crystalG); disposeGroup(ghostG);
+    const X = state.X, P = X.poly;
+    const pos = [], col = [], triFace = [];
+    P.faces.forEach((f, fi) => {
+      const c = faceColor(X, f);
+      for (let t = 1; t < f.idx.length - 1; t++) {
+        [f.idx[0], f.idx[t], f.idx[t + 1]].forEach(i => { const v = T(P.verts[i]); pos.push(v.x, v.y, v.z); col.push(c.r, c.g, c.b); });
+        triFace.push(fi);
+      }
+    });
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+    geo.setAttribute('color', new THREE.Float32BufferAttribute(col, 3));
+    geo.computeVertexNormals();
+    const mk = side => new THREE.MeshPhongMaterial({ vertexColors: true, transparent: true, opacity: state.opacity, side, depthWrite: false, shininess: 60, specular: 0x333333, flatShading: true, polygonOffset: true, polygonOffsetFactor: 1, polygonOffsetUnits: 1 });
+    const back = new THREE.Mesh(geo, mk(THREE.BackSide)); back.renderOrder = 1;
+    const front = new THREE.Mesh(geo, mk(THREE.FrontSide)); front.renderOrder = 4;
+    crystalG.add(back, front);
+    // Kanten
+    const emap = new Map();
+    P.faces.forEach((f, fi) => f.idx.forEach((a, k) => {
+      const b = f.idx[(k + 1) % f.idx.length], key = a < b ? a + '_' + b : b + '_' + a;
+      if (!emap.has(key)) emap.set(key, { a, b, f: [] });
+      emap.get(key).f.push(fi);
+    }));
+    const edges = [...emap.values()];
+    const mkLines = (color, opacity) => {
+      const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(new Float32Array(edges.length * 6), 3));
+      const l = new THREE.LineSegments(g, new THREE.LineBasicMaterial({ color, transparent: true, opacity, depthWrite: false }));
+      l.renderOrder = 5; l.frustumCulled = false; return l;
+    };
+    const eF = mkLines(0x1d2433, 0.95), eB = mkLines(0x1d2433, 0.22);
+    crystalG.add(eF, eB);
+    // Markierung
+    const markGeo = new THREE.BufferGeometry();
+    const mark = new THREE.Mesh(markGeo, new THREE.MeshBasicMaterial({ color: 0xffcc33, transparent: true, opacity: 0.85, side: THREE.DoubleSide, depthWrite: false }));
+    mark.renderOrder = 6; mark.visible = false; crystalG.add(mark);
+    crystal = { front, back, eF, eB, edges, triFace, mark };
+    // Geist (für Operationen)
+    const gp = [];
+    edges.forEach(e => { const a = T(P.verts[e.a]), b = T(P.verts[e.b]); gp.push(a.x, a.y, a.z, b.x, b.y, b.z); });
+    const gg = new THREE.BufferGeometry(); gg.setAttribute('position', new THREE.Float32BufferAttribute(gp, 3));
+    const ghost = new THREE.LineSegments(gg, new THREE.LineDashedMaterial({ color: 0x5a6375, dashSize: 0.04, gapSize: 0.03, transparent: true, opacity: 0.7, depthTest: false }));
+    ghost.computeLineDistances(); ghost.renderOrder = 7;
+    ghostG.add(ghost); ghostG.visible = false;
+    updateMark();
+  }
+  function updateMark() {
+    const m = crystal.mark, X = state.X;
+    if (state.marked < 0) { m.visible = false; return; }
+    const f = X.poly.faces[state.marked], pos = [];
+    const n = T(f.n).multiplyScalar(0.004);
+    for (let t = 1; t < f.idx.length - 1; t++) [f.idx[0], f.idx[t], f.idx[t + 1]].forEach(i => { const v = T(X.poly.verts[i]).add(n); pos.push(v.x, v.y, v.z); });
+    m.geometry.dispose(); m.geometry = new THREE.BufferGeometry(); m.geometry.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+    m.visible = true;
+  }
+
+  // ---------- Symmetrieelemente ----------
+  const L = 1.32;
+  function buildElements() {
+    disposeGroup(elemG); famObjs = []; labelSprites = [];
+    const X = state.X;
+    X.sym.fams.forEach((fam, fi) => {
+      const g = new THREE.Group();
+      fam.members.forEach(e => {
+        const d = T(e.dir).normalize();
+        if (e.kind === 'rot' || e.kind === 'rotoinv') {
+          const color = ORDER_COL[e.order];
+          const cyl = new THREE.Mesh(new THREE.CylinderGeometry(0.011, 0.011, 2 * L, 10), new THREE.MeshPhongMaterial({ color }));
+          cyl.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), d); g.add(cyl);
+          [1, -1].forEach(s => {
+            const sm = symbolSprite(e.sym, ORDER_CSS[e.order]); sm.position.copy(d.clone().multiplyScalar(s * L)); g.add(sm);
+          });
+          const sp = textSprite(e.sym, ORDER_CSS[e.order]); sp.position.copy(d.clone().multiplyScalar(L + 0.19)); g.add(sp); labelSprites.push(sp);
+        } else if (e.kind === 'mirror') {
+          const R = 1.18;
+          const disc = new THREE.Mesh(new THREE.CircleGeometry(R, 72), new THREE.MeshBasicMaterial({ color: MIRROR_COL, transparent: true, opacity: 0.2, side: THREE.DoubleSide, depthWrite: false }));
+          alignZ(disc, d); disc.renderOrder = 2; g.add(disc);
+          const ring = new THREE.LineLoop(new THREE.BufferGeometry().setFromPoints(Array.from({ length: 96 }, (_, i) => new THREE.Vector3(R * Math.cos(i / 96 * 2 * Math.PI), R * Math.sin(i / 96 * 2 * Math.PI), 0))),
+            new THREE.LineBasicMaterial({ color: MIRROR_COL, transparent: true, opacity: 0.85 }));
+          alignZ(ring, d); ring.renderOrder = 3; g.add(ring);
+        } else if (e.kind === 'inv') {
+          const s = new THREE.Mesh(new THREE.SphereGeometry(0.045, 24, 16), new THREE.MeshPhongMaterial({ color: INV_COL, shininess: 80 }));
+          g.add(s);
+          const sp = textSprite('-1', '#222', 0.17); sp.position.set(0.1, 0.1, 0.1); g.add(sp); labelSprites.push(sp);
+        }
+      });
+      g.visible = !!state.famVis[fi];
+      elemG.add(g); famObjs.push(g);
+    });
+    labelSprites.forEach(s => s.visible = state.labels);
+  }
+  function buildAxes() {
+    disposeGroup(axesG);
+    const X = state.X;
+    ['a', 'b', 'c'].forEach((n, j) => {
+      const d = T(X.axesABC[j]).normalize();
+      const pts = [d.clone().multiplyScalar(-1.55), d.clone().multiplyScalar(1.55)];
+      const l = new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), new THREE.LineDashedMaterial({ color: 0x6b7180, dashSize: 0.06, gapSize: 0.04 }));
+      l.computeLineDistances(); axesG.add(l);
+      const cone = new THREE.Mesh(new THREE.ConeGeometry(0.03, 0.1, 16), new THREE.MeshBasicMaterial({ color: 0x6b7180 }));
+      cone.position.copy(d.clone().multiplyScalar(1.6)); cone.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), d); axesG.add(cone);
+      const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: italicTex(n), depthTest: false, transparent: true })); sp.scale.set(0.16, 0.16, 1);
+      sp.position.copy(d.clone().multiplyScalar(1.76)); sp.renderOrder = 10; axesG.add(sp);
+    });
+    axesG.visible = state.showAxes;
+  }
+  function italicTex(t) {
+    const cv = document.createElement('canvas'); cv.width = cv.height = 128; const g = cv.getContext('2d');
+    g.font = 'italic 500 84px "IBM Plex Serif", Georgia, serif'; g.textAlign = 'center'; g.textBaseline = 'middle';
+    g.lineWidth = 10; g.strokeStyle = 'rgba(255,253,248,.95)'; g.strokeText(t, 64, 64); g.fillStyle = '#4a5263'; g.fillText(t, 64, 64);
+    return new THREE.CanvasTexture(cv);
+  }
+
+  // ---------- Ansicht / Rotation ----------
+  const qDefault = () => new THREE.Quaternion().setFromRotationMatrix(m4From3(THUMB.viewMatrix(...(state.entry && state.entry.ex.view ? state.entry.ex.view : [-20, 12]))));
+  function m4From3(R) { const m = new THREE.Matrix4(); m.set(R[0][0], R[0][1], R[0][2], 0, R[1][0], R[1][1], R[1][2], 0, R[2][0], R[2][1], R[2][2], 0, 0, 0, 0, 1); return m; }
+  let viewAnim = null;
+  function animateTo(q, ms = 700) { viewAnim = { from: root.quaternion.clone(), to: q, t0: performance.now(), ms }; }
+  function lookAlong(dirThree, upThree) {
+    const z = dirThree.clone().normalize();
+    let up = (upThree || new THREE.Vector3(0, 1, 0)).clone();
+    up.sub(z.clone().multiplyScalar(up.dot(z)));
+    if (up.length() < 1e-3) { up = new THREE.Vector3(1, 0, 0).sub(z.clone().multiplyScalar(z.x)); }
+    const y = up.normalize(), x = new THREE.Vector3().crossVectors(y, z);
+    const m = new THREE.Matrix4().makeBasis(x, y, z).transpose();
+    animateTo(new THREE.Quaternion().setFromRotationMatrix(m));
+  }
+  function lookEdgeOn(normal) { // Spiegelebene von der Kante: Normale zeigt nach rechts
+    const n = normal.clone().normalize();
+    let w = new THREE.Vector3(0, 1, 0).sub(n.clone().multiplyScalar(n.y));
+    if (w.length() < 1e-3) w = new THREE.Vector3(0, 0, 1).sub(n.clone().multiplyScalar(n.z));
+    // z' = Blickrichtung in der Ebene, senkrecht zu c, damit c oben bleibt
+    const cUp = new THREE.Vector3(0, 1, 0);
+    let z = new THREE.Vector3().crossVectors(n, cUp);
+    if (z.length() < 1e-3) z = new THREE.Vector3().crossVectors(n, new THREE.Vector3(0, 0, 1));
+    z.normalize();
+    const y = new THREE.Vector3().crossVectors(z, n).normalize();
+    const m = new THREE.Matrix4().makeBasis(n, y, z).transpose();
+    animateTo(new THREE.Quaternion().setFromRotationMatrix(m));
+  }
+  document.getElementById('vReset').onclick = () => { animateTo(qDefault()); camDist = 7; };
+  document.querySelectorAll('[data-look]').forEach(b => b.onclick = () => {
+    const j = 'abc'.indexOf(b.dataset.look), X = state.X;
+    const d = T(X.axesABC[j]);
+    if (j === 2) lookAlong(d, T(X.axesABC[1]).add(T(X.axesABC[0]).multiplyScalar(-0.0001)));
+    else lookAlong(d, T(X.axesABC[2]));
+  });
+
+  // Ziehen
+  const cv = renderer.domElement;
+  let drag = null, moved = false;
+  cv.addEventListener('pointerdown', e => { drag = { x: e.clientX, y: e.clientY }; moved = false; cv.setPointerCapture(e.pointerId); });
+  cv.addEventListener('pointermove', e => {
+    if (drag) {
+      const dx = e.clientX - drag.x, dy = e.clientY - drag.y;
+      if (Math.abs(dx) + Math.abs(dy) > 2) moved = true;
+      if (moved) {
+        const ang = Math.hypot(dx, dy) * 0.009;
+        if (ang > 0) { const q = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(dy, dx, 0).normalize(), ang); root.quaternion.premultiply(q); viewAnim = null; }
+        drag.x = e.clientX; drag.y = e.clientY; hideTip();
+      }
+    } else hover(e);
+  });
+  cv.addEventListener('pointerup', e => { if (drag && !moved) clickFace(e); drag = null; });
+  cv.addEventListener('pointerleave', hideTip);
+  cv.addEventListener('wheel', e => { e.preventDefault(); camDist = Math.min(14, Math.max(3.2, camDist * (1 + Math.sign(e.deltaY) * 0.08))); }, { passive: false });
+
+  // Hover / Klick
+  const ray = new THREE.Raycaster(), tip = document.getElementById('tip');
+  function pick(e) {
+    const r = cv.getBoundingClientRect();
+    ray.setFromCamera(new THREE.Vector2(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1), camera);
+    const hit = ray.intersectObject(crystal.front)[0];
+    return hit ? crystal.triFace[hit.faceIndex] : -1;
+  }
+  function faceText(fi) {
+    const X = state.X, f = X.poly.faces[fi], form = X.forms[f.form];
+    return `(${idxHTML(planeIdx(X, f.hkl))}) · ${trForm(form.name)} {${idxHTML(planeIdx(X, form.hkl))}}`;
+  }
+  function hover(e) {
+    if (opAnim) return;
+    if (quiz.on && !quiz.solved) return;
+    const fi = pick(e);
+    if (fi < 0) return hideTip();
+    const r = wrap.getBoundingClientRect();
+    tip.innerHTML = faceText(fi); tip.style.display = 'block';
+    tip.style.left = (e.clientX - r.left) + 'px'; tip.style.top = (e.clientY - r.top) + 'px';
+    highlightForm(state.X.poly.faces[fi].form);
+  }
+  function hideTip() { tip.style.display = 'none'; highlightForm(state.marked >= 0 ? state.X.poly.faces[state.marked].form : -1); }
+  function clickFace(e) {
+    if (opAnim) return;
+    const fi = pick(e);
+    state.marked = fi === state.marked ? -1 : fi;
+    updateMark(); hideTip(); stereoDirty = true;
+  }
+  function highlightForm(fi) { document.querySelectorAll('#ftable tr').forEach((tr, i) => tr.classList.toggle('hl', i === fi)); }
+
+  // ---------- Symmetrieoperation animieren ----------
+  let opAnim = null;
+  const msg = document.getElementById('opmsg');
+  function opMatrix(e, t, mode) { // t in [0,1]
+    const d = T(e.dir).normalize(), m = new THREE.Matrix4();
+    const scaleAlong = (n, s) => { const M = new THREE.Matrix4(); const a = n; M.set(1 + (s - 1) * a.x * a.x, (s - 1) * a.x * a.y, (s - 1) * a.x * a.z, 0, (s - 1) * a.y * a.x, 1 + (s - 1) * a.y * a.y, (s - 1) * a.y * a.z, 0, (s - 1) * a.z * a.x, (s - 1) * a.z * a.y, 1 + (s - 1) * a.z * a.z, 0, 0, 0, 0, 1); return M; };
+    const ease = x => x < 0.5 ? 2 * x * x : 1 - Math.pow(-2 * x + 2, 2) / 2;
+    if (e.kind === 'rot') return m.makeRotationAxis(d, ease(t) * 2 * Math.PI / e.order);
+    if (e.kind === 'mirror') return scaleAlong(d, Math.cos(Math.PI * ease(t)));
+    if (e.kind === 'inv') { const s = Math.cos(Math.PI * ease(t)); return m.makeScale(s, s, s); }
+    if (mode === '3m') { // 6̄ als 3/m: Drehung um -120°, dann Spiegelung ⊥ Achse
+      const u1 = Math.min(1, t / 0.55), u2 = Math.max(0, (t - 0.55) / 0.45);
+      const r = new THREE.Matrix4().makeRotationAxis(d, -ease(u1) * 2 * Math.PI / 3);
+      return scaleAlong(d, Math.cos(Math.PI * ease(u2))).multiply(r);
+    }
+    // Drehinversion: erst drehen, dann invertieren
+    const t1 = Math.min(1, t / 0.55), t2 = Math.max(0, (t - 0.55) / 0.45);
+    const rot = new THREE.Matrix4().makeRotationAxis(d, ease(t1) * 2 * Math.PI / e.order);
+    const s = Math.cos(Math.PI * ease(t2));
+    return new THREE.Matrix4().makeScale(s, s, s).multiply(rot);
+  }
+  function opName(e, mode) {
+    const d = e.idx ? (e.kind === 'mirror' ? `(${idxHTML(e.idx)})` : `[${idxHTML(e.idx)}]`) : '';
+    if (mode === '3m') return t('op3m', { d });
+    if (e.kind === 'rot') return t('opRot', { a: 360 / e.order, d });
+    if (e.kind === 'rotoinv') return t('opRotoinv', { a: 360 / e.order, d });
+    if (e.kind === 'mirror') return t('opMirror', { d });
+    return t('opInv');
+  }
+  function runOp(fam, fi, mode) {
+    if (opAnim) return;
+    const k = (state.opIdx[fi] || 0) % fam.members.length; state.opIdx[fi] = k + 1;
+    const e = fam.members[k];
+    if (!state.famVis[fi]) setFam(fi, true);
+    opAnim = { e, mode, t0: performance.now(), ms: e.kind === 'rotoinv' ? 2600 : 1700 };
+    ghostG.visible = true;
+    msg.innerHTML = opName(e, mode); msg.classList.add('show');
+    hideTip();
+  }
+  function finishOp() {
+    const e = opAnim.e, mode = opAnim.mode; opAnim = null;
+    const M = opMatrix(e, 1, mode);
+    if (state.marked >= 0) {
+      const X = state.X, n = T(X.poly.faces[state.marked].n).applyMatrix4(new THREE.Matrix4().extractRotation(M));
+      // Normalen transformieren sich bei orthogonalen Matrizen wie Vektoren
+      const nn = T(X.poly.faces[state.marked].n).applyMatrix4(M).normalize();
+      let best = -1, bd = 1e9;
+      X.poly.faces.forEach((f, i) => { const dd = T(f.n).distanceTo(nn); if (dd < bd) { bd = dd; best = i; } });
+      if (bd < 1e-3) state.marked = best;
+    }
+    crystalG.matrix.identity(); crystalG.matrixWorldNeedsUpdate = true;
+    updateMark(); stereoDirty = true;
+    ghostG.visible = false;
+    setTimeout(() => msg.classList.remove('show'), 900);
+  }
+
+  // ---------- Kanten front/back pro Frame ----------
+  const _v = new THREE.Vector3(), _n = new THREE.Vector3(), _c = new THREE.Vector3();
+  function updateEdges() {
+    if (!crystal) return;
+    const X = state.X, P = X.poly, M = crystalG.matrixWorld;
+    const nm = new THREE.Matrix3().getNormalMatrix(M);
+    const front = P.faces.map(f => {
+      _n.copy(T(f.n)).applyMatrix3(nm).normalize();
+      _c.copy(T(f.centroid)).applyMatrix4(M);
+      return _v.copy(camera.position).sub(_c).dot(_n) > 0;
+    });
+    const fa = crystal.eF.geometry.attributes.position, ba = crystal.eB.geometry.attributes.position;
+    let fi = 0, bi = 0;
+    crystal.edges.forEach(e => {
+      const isF = e.f.some(i => front[i]);
+      const a = T(P.verts[e.a]), b = T(P.verts[e.b]);
+      const arr = isF ? fa : ba, k = isF ? fi++ : bi++;
+      arr.setXYZ(2 * k, a.x, a.y, a.z); arr.setXYZ(2 * k + 1, b.x, b.y, b.z);
+    });
+    crystal.eF.geometry.setDrawRange(0, fi * 2); crystal.eB.geometry.setDrawRange(0, bi * 2);
+    fa.needsUpdate = true; ba.needsUpdate = true;
+  }
+
+  // ---------- Schleife ----------
+  function frame(now) {
+    if (viewAnim) {
+      const t = Math.min(1, (now - viewAnim.t0) / viewAnim.ms), s = t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+      root.quaternion.copy(viewAnim.from).slerp(viewAnim.to, s);
+      if (t >= 1) viewAnim = null;
+    } else if (state.spin && !drag) {
+      root.quaternion.premultiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), 0.004));
+    }
+    if (opAnim) {
+      const t = Math.min(1, (now - opAnim.t0) / opAnim.ms);
+      crystalG.matrix.copy(opMatrix(opAnim.e, t, opAnim.mode)); crystalG.matrixWorldNeedsUpdate = true;
+      if (t >= 1) finishOp();
+    }
+    camera.position.z += (camDist - camera.position.z) * 0.2;
+    if (stereoDirty || opAnim || (followCb.checked && !root.quaternion.equals(lastQ))) { drawStereo(); stereoDirty = false; lastQ.copy(root.quaternion); }
+    scene.updateMatrixWorld();
+    updateEdges();
+    renderer.render(scene, camera);
+    requestAnimationFrame(frame);
+  }
+
+  // ---------- Steuerelemente ----------
+  function setFam(fi, on) {
+    state.famVis[fi] = on;
+    if (famObjs[fi]) famObjs[fi].visible = on;
+    stereoDirty = true;
+    const cb = document.querySelector(`#elist input[data-fi="${fi}"]`); if (cb) cb.checked = on;
+    syncKindButtons();
+  }
+  function syncKindButtons() {
+    const fams = state.X.sym.fams;
+    document.querySelectorAll('[data-kind]').forEach(b => {
+      const k = b.dataset.kind;
+      const idx = fams.map((f, i) => i).filter(i => k === 'all' || fams[i].kind === k);
+      b.disabled = idx.length === 0;
+      b.classList.toggle('on', idx.length > 0 && idx.every(i => state.famVis[i]));
+    });
+  }
+  document.querySelectorAll('[data-kind]').forEach(b => b.onclick = () => {
+    const k = b.dataset.kind, fams = state.X.sym.fams;
+    const idx = fams.map((f, i) => i).filter(i => k === 'all' || fams[i].kind === k);
+    const on = !idx.every(i => state.famVis[i]);
+    idx.forEach(i => setFam(i, on));
+  });
+  const tgl = (id, key, fn) => { const b = document.getElementById(id); b.onclick = () => { state[key] = !state[key]; b.classList.toggle('on', state[key]); fn && fn(); }; };
+  tgl('tForms', 'showForms', () => { buildCrystal(); renderForms(); stereoDirty = true; });
+  tgl('tAxes', 'showAxes', () => { axesG.visible = state.showAxes; stereoDirty = true; });
+  tgl('tLabels', 'labels', () => labelSprites.forEach(s => s.visible = state.labels));
+  tgl('tSpin', 'spin');
+  document.getElementById('opacity').oninput = e => { state.opacity = +e.target.value; [crystal.front, crystal.back].forEach(m => { m.material.opacity = state.opacity; }); };
+
+  // ---------- Info-Panels ----------
+  function glyphSVG(f) {
+    const c = f.kind === 'mirror' ? '#e8960c' : f.kind === 'inv' ? '#222' : ORDER_CSS[f.order];
+    if (f.kind === 'mirror') return `<svg class="glyph" viewBox="0 0 30 22"><rect x="3" y="9" width="24" height="4" rx="1" fill="${c}" opacity=".85"/></svg>`;
+    if (f.kind === 'inv') return `<svg class="glyph" viewBox="0 0 30 22"><circle cx="15" cy="11" r="4.5" fill="${c}"/></svg>`;
+    const n = f.order, R = 8, cx = 15, cy = 11;
+    let shape = '';
+    if (n === 2) shape = `<ellipse cx="${cx}" cy="${cy}" rx="4.5" ry="8" fill="${c}"/>`;
+    else {
+      const rot = n === 3 ? -Math.PI / 2 : n === 4 ? Math.PI / 4 : 0, Rr = n === 3 ? 9 : R;
+      const pts = Array.from({ length: n }, (_, i) => `${(cx + Rr * Math.cos(rot + i * 2 * Math.PI / n)).toFixed(1)},${(cy + 1 + Rr * Math.sin(rot + i * 2 * Math.PI / n)).toFixed(1)}`).join(' ');
+      shape = `<polygon points="${pts}" fill="${c}"/>`;
+    }
+    if (f.kind === 'rotoinv') shape += n === 3 ? `<circle cx="${cx}" cy="${cy + 1.5}" r="2.6" fill="#fff"/>` : n === 4 ? `<ellipse cx="${cx}" cy="${cy}" rx="2.2" ry="4" fill="#fff"/>` :
+      `<polygon points="${cx},${cy - 3.5} ${cx + 3.6},${cy + 2.7} ${cx - 3.6},${cy + 2.7}" fill="#fff"/>`;
+    return `<svg class="glyph" viewBox="0 0 30 22">${shape}</svg>`;
+  }
+  function famLabel(f) {
+    if (f.kind === 'inv') return `<b><span class="ob">1</span></b>&nbsp; ${t('invCentre')}`;
+    const n = f.members.length, mirror = f.kind === 'mirror', idx = idxHTML(f.rep);
+    const br = mirror ? (n > 1 ? `{${idx}}` : `(${idx})`) : (n > 1 ? `⟨${idx}⟩` : `[${idx}]`);
+    return `${n > 1 ? n + ' × ' : ''}<b>${hmHTML(f.sym)}</b>&nbsp; <span class="mono">${br}</span>${f.sym === '-6' ? ` <span class="muted">≡ 3/<i>m</i></span>` : ''}`;
+  }
+  function renderElements() {
+    const el = document.getElementById('elist'), X = state.X;
+    el.innerHTML = '';
+    if (!X.sym.fams.length) { el.innerHTML = `<div class="muted">${t('onlyId')}</div>`; return; }
+    X.sym.fams.forEach((f, fi) => {
+      const row = document.createElement('div'); row.className = 'erow';
+      const look = f.kind !== 'inv' ? `<button class="ib" data-a="look" title="${t(f.kind === 'mirror' ? 'eyePlane' : 'eyeAxis')}">👁</button>` : '<span></span>';
+      row.innerHTML = `<input type="checkbox" data-fi="${fi}" ${state.famVis[fi] ? 'checked' : ''}>${glyphSVG(f)}<span>${famLabel(f)}</span>${look}<span style="display:flex;gap:4px">${f.sym === '-6' ? `<button class="ib" data-a="op3m" title="${t('play3m')}">▶ 3/<i>m</i></button>` : ''}<button class="ib" data-a="op" title="${t('playOp')}">▶</button></span>`;
+      row.querySelector('input').onchange = e => setFam(fi, e.target.checked);
+      row.querySelector('[data-a="op"]').onclick = () => runOp(f, fi);
+      const b3 = row.querySelector('[data-a="op3m"]'); if (b3) b3.onclick = () => runOp(f, fi, '3m');
+      const lb = row.querySelector('[data-a="look"]');
+      if (lb) lb.onclick = () => {
+        const k = ((state.opIdx['l' + fi] || 0)) % f.members.length; state.opIdx['l' + fi] = k + 1;
+        const d = T(f.members[k].dir);
+        if (!state.famVis[fi]) setFam(fi, true);
+        if (f.kind === 'mirror') lookEdgeOn(d); else lookAlong(d, T(X.axesABC[2]).lengthSq() ? T(X.axesABC[2]) : undefined);
+      };
+      el.appendChild(row);
+    });
+  }
+  function renderForms() {
+    const X = state.X, tb = document.getElementById('ftable');
+    tb.innerHTML = X.forms.map((f, i) => `<tr><td>${state.showForms ? `<span class="sw" style="background:${FORM_PAL[i % FORM_PAL.length]}"></span>` : ''}</td>
+      <td class="mono">{${idxHTML(planeIdx(X, f.hkl))}}</td><td>${trForm(f.name)}</td><td class="muted" style="text-align:right;white-space:nowrap">${f.mult} ${t(f.mult === 1 ? 'face1' : 'faceN')}</td></tr>`).join('');
+    const tip = document.getElementById('ftip');
+    tb.querySelectorAll('tr').forEach((tr, i) => {
+      const f = X.forms[i];
+      tr.onmouseenter = () => {
+        tip.innerHTML = `<b>${trForm(f.name)}</b> <span class="mono">{${idxHTML(planeIdx(X, f.hkl))}}</span><div style="margin-top:4px">${noteHTML(I18N.formDef(f.name, LANG))}</div>` +
+          `<div class="k">${f.mult} ${t(f.mult === 1 ? 'face1' : 'faceN')}</div>`;
+        tip.style.display = 'block';
+        const r = tr.getBoundingClientRect(), w = tip.offsetWidth, h = tip.offsetHeight;
+        let x = r.left - w - 12; if (x < 8) x = Math.min(window.innerWidth - w - 8, r.left + 20);
+        let y = r.top + r.height / 2 - h / 2; y = Math.max(8, Math.min(window.innerHeight - h - 8, y));
+        if (x === Math.min(window.innerWidth - w - 8, r.left + 20)) y = r.bottom + 6 + h > window.innerHeight ? r.top - h - 6 : r.bottom + 6;
+        tip.style.left = x + 'px'; tip.style.top = y + 'px';
+        highlightForm(i);
+      };
+      tr.onmouseleave = () => { tip.style.display = 'none'; highlightForm(state.marked >= 0 ? X.poly.faces[state.marked].form : -1); };
+    });
+  }
+  function renderClass() {
+    const X = state.X, c = X.cls, ex = X.ex, e = state.entry;
+    const centro = X.sym.inversion, chiral = X.Rc.every(R => CORE.det(R) > 0);
+    document.getElementById('pClass').innerHTML = `
+      <h2>${hmHTML(c.full.includes(' ') ? c.full : c.hm)}${c.full.includes(' ') ? ` <span class="muted" style="font-size:15px">(${hmHTML(c.hm)})</span>` : ''}</h2>
+      <div style="color:var(--ink2)">${trClass(c)}</div>
+      <dl class="kv">
+        <dt>${t('sch')}</dt><dd>${schHTML(c.sch)}</dd>
+        <dt>${t('system')}</dt><dd>${trSys(c.system)}</dd>
+        <dt>${t('order')}</dt><dd>${X.order}</dd>
+        <dt>${t('laue')}</dt><dd>${hmHTML(LAUE[c.id])}</dd>
+      </dl>
+      <div class="chips">
+        <span class="chip ${centro ? 'yes' : ''}">${t(centro ? 'centro' : 'noncentro')}</span>
+        ${chiral ? `<span class="chip yes">${t('enantio')}</span>` : ''}
+        ${POLAR.has(c.id) ? `<span class="chip yes">${t('polar')}</span>` : ''}
+      </div>
+      ${c.id === '-6' || c.id === '-6m2' ? `<div class="ex" style="margin-top:10px">${t('eq6')}</div>` : ''}
+      <div class="ex" style="margin-top:12px"><b>${trMin(ex.name)}</b>${ex.formula ? ' · ' + ex.formula : ''}<br>${noteHTML(trNote(e))}</div>`;
+    const hide = quiz.on && !quiz.solved;
+    document.getElementById('bigS').innerHTML = hide ? '?' : hmHTML(c.hm);
+    document.getElementById('bigN').innerHTML = hide ? '' : `${trClass(c)} · ${trMin(ex.name)}`;
+  }
+
+  // ---------- Stereographische Projektion ----------
+  const stereoEl = document.getElementById('stereo');
+  const followCb = document.getElementById('followView');
+  let stereoDirty = true;
+  const lastQ = new THREE.Quaternion();
+  followCb.onchange = () => { stereoDirty = true; renderStereoNote(); };
+  const helpEl = document.getElementById('stereoHelp'), helpBtn = document.getElementById('stereoHelpBtn');
+  helpBtn.onclick = () => { helpEl.hidden = !helpEl.hidden; helpBtn.classList.toggle('on', !helpEl.hidden); };
+  function renderStereoHelp() {
+    const h = I18N.stereoHelp[LANG];
+    helpEl.innerHTML = `<b>${h.t}</b>
+      <svg viewBox="0 0 300 212" role="img" aria-label="${h.t}">
+        <defs><marker id="sharr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker></defs>
+        <circle cx="120" cy="106" r="90" fill="#fffdf8" stroke="#1d2433" stroke-width="1"/>
+        <line x1="22" y1="106" x2="218" y2="106" stroke="#8a909c" stroke-width="1" stroke-dasharray="4 3"/>
+        <polygon points="128,87.5 139.6,101.3 138,120 121,126 104,117 102,100 112,87" fill="#d9d3ee" stroke="#4a5263" stroke-width="0.8"/>
+        <line x1="128" y1="87.5" x2="139.6" y2="101.3" stroke="#d6453d" stroke-width="3" stroke-linecap="round"/>
+        <line x1="133.8" y1="94.4" x2="187.5" y2="49.2" stroke="#d6453d" stroke-width="1.5" marker-end="url(#sharr)"/>
+        <line x1="120" y1="196" x2="188.9" y2="48.1" stroke="#1f9d55" stroke-width="1.2" stroke-dasharray="4 3"/>
+        <circle cx="188.9" cy="48.1" r="5" fill="#d6453d"/><circle cx="162" cy="106" r="5" fill="#1d2433"/><circle cx="120" cy="196" r="3.5" fill="#1d2433"/>
+        <text x="196" y="44" font-size="13" font-style="italic" font-family="IBM Plex Serif, serif" fill="#1d2433">P</text>
+        <text x="167" y="100" font-size="13" font-style="italic" font-family="IBM Plex Serif, serif" fill="#1d2433">P′</text>
+        <text x="128" y="206" font-size="13" font-style="italic" font-family="IBM Plex Serif, serif" fill="#1d2433">S</text>
+        <text x="226" y="110" font-size="10.5" font-family="IBM Plex Sans, sans-serif" fill="#8a909c">${h.l.E}</text>
+      </svg>
+      <ol>${h.s.map(x => `<li>${x}</li>`).join('')}</ol><div>${h.r}</div>`;
+  }
+  function renderStereoNote() { document.getElementById('stereoNote').innerHTML = t(followCb.checked ? 'stereoFollow' : 'stereoStd') + '<br>' + t('stereoLegend');  renderStereoHelp(); }
+  function makeProj() {
+    const M = crystalG.matrix.clone();
+    if (followCb.checked) M.premultiply(new THREE.Matrix4().makeRotationFromQuaternion(root.quaternion));
+    return v => {
+      const w = v.clone().applyMatrix4(M), l = w.length();
+      if (l < 1e-6) return null;
+      w.divideScalar(l);
+      return followCb.checked ? [w.x, w.y, w.z] : [w.x, -w.z, w.y];
+    };
+  }
+  const st = p => { const k = 1 / (1 + Math.abs(p[2])); return [p[0] * k, -p[1] * k]; };
+  const f3 = x => x.toFixed(4);
+  function symPath(sym, x, y, ang, color) {
+    const bar = sym.startsWith('-'), n = +sym.replace('-', ''), S = 0.072;
+    let out = `<g transform="translate(${f3(x)} ${f3(y)}) rotate(${(ang * 180 / Math.PI).toFixed(1)})">`;
+    const poly = (k, R, rot, dy = 0) => Array.from({ length: k }, (_, i) => `${f3(R * Math.cos(rot + i * 2 * Math.PI / k))},${f3(dy + R * Math.sin(rot + i * 2 * Math.PI / k))}`).join(' ');
+    const st0 = 'stroke="#fffdf8" stroke-width="0.012" stroke-linejoin="round"';
+    if (n === 2) out += `<ellipse rx="${S * 1.05}" ry="${S * 0.5}" fill="${color}" ${st0}/>`;
+    else if (n === 3) out += `<polygon points="${poly(3, S * 1.05, 0)}" fill="${color}" ${st0}/>`;
+    else if (n === 4) out += `<polygon points="${poly(4, S * 0.95, Math.PI / 4)}" fill="${color}" ${st0}/>`;
+    else out += `<polygon points="${poly(6, S * 0.92, 0)}" fill="${color}" ${st0}/>`;
+    if (bar) {
+      if (n === 3) out += `<circle r="${S * 0.28}" fill="#fff"/>`;
+      else if (n === 4) out += `<ellipse rx="${S * 0.42}" ry="${S * 0.22}" fill="#fff"/>`;
+      else out += `<polygon points="${poly(3, S * 0.45, 0)}" fill="#fff"/>`;
+    }
+    return out + '</g>';
+  }
+  function drawStereo() {
+    if (!state.X) return;
+    const X = state.X, P = makeProj();
+    let o = `<circle r="1" fill="#fffdf8" stroke="#1d2433" stroke-width="0.012"/>`;
+    o += `<path d="M-1 0H1M0 -1V1" stroke="#cfcabd" stroke-width="0.006" stroke-dasharray="0.03 0.025"/>`;
+    const fams = X.sym.fams;
+    // Spiegelebenen als Großkreise
+    fams.forEach((f, fi) => {
+      if (f.kind !== 'mirror' || !state.famVis[fi]) return;
+      f.members.forEach(e => {
+        const n = P(T(e.dir)); if (!n) return;
+        if (Math.abs(n[2]) > 1 - 1e-6) { o += `<circle r="1" fill="none" stroke="#e8960c" stroke-width="0.03"/>`; return; }
+        const nv = new THREE.Vector3(...n), u = new THREE.Vector3().crossVectors(nv, new THREE.Vector3(0, 0, 1)).normalize();
+        const w = new THREE.Vector3().crossVectors(nv, u); if (w.z < 0) w.negate();
+        let d = '';
+        for (let i = 0; i <= 90; i++) { const a = Math.PI * i / 90, p = u.clone().multiplyScalar(Math.cos(a)).add(w.clone().multiplyScalar(Math.sin(a))); const q = st([p.x, p.y, Math.max(0, p.z)]); d += (i ? 'L' : 'M') + f3(q[0]) + ' ' + f3(q[1]); }
+        o += `<path d="${d}" fill="none" stroke="#e8960c" stroke-width="0.022" stroke-linecap="round"/>`;
+      });
+    });
+    // Achsensymbole
+    let centreTaken = false;
+    const syms = [];
+    fams.forEach((f, fi) => {
+      if ((f.kind !== 'rot' && f.kind !== 'rotoinv') || !state.famVis[fi]) return;
+      f.members.forEach(e => [1, -1].forEach(sg => {
+        const p = P(T(e.dir).multiplyScalar(sg)); if (!p || p[2] < -1e-6) return;
+        const q = st(p), r = Math.hypot(q[0], q[1]);
+        if (r < 0.05) centreTaken = true;
+        syms.push(symPath(e.sym, q[0], q[1], r < 1e-3 ? Math.PI / 2 : Math.atan2(q[1], q[0]), ORDER_CSS[e.order]));
+      }));
+    });
+
+    // Flächenpole
+    const showT = !(quiz.on && !quiz.solved);
+    let lower = '', upper = '';
+    X.poly.faces.forEach((f, i) => {
+      const p = P(T(f.n)); if (!p) return;
+      const q = st(p), col = state.showForms ? FORM_PAL[f.form % FORM_PAL.length] : '#1d2433';
+      const title = showT ? `<title>(${planeIdx(X, f.hkl).join(' ')})</title>` : '';
+      const ring = i === state.marked ? `<circle cx="${f3(q[0])}" cy="${f3(q[1])}" r="0.06" fill="#ffcc33" stroke="#c99a00" stroke-width="0.006"/>` : '';
+      if (p[2] >= -1e-6) upper += `<g class="pole" data-fi="${i}">${ring}<circle cx="${f3(q[0])}" cy="${f3(q[1])}" r="0.026" fill="${col}" stroke="${state.showForms ? '#1d2433' : 'none'}" stroke-width="0.006"/><circle cx="${f3(q[0])}" cy="${f3(q[1])}" r="0.055" fill="transparent"/>${title}</g>`;
+      else lower += `<g class="pole" data-fi="${i}">${ring}<circle cx="${f3(q[0])}" cy="${f3(q[1])}" r="0.046" fill="#fffdf8" stroke="${state.showForms ? FORM_PAL[f.form % FORM_PAL.length] : '#1d2433'}" stroke-width="0.012"/><circle cx="${f3(q[0])}" cy="${f3(q[1])}" r="0.055" fill="transparent"/>${title}</g>`;
+    });
+    o += lower + upper;
+    o += `<g opacity="0.93" pointer-events="none">${syms.join('')}</g>`;
+    fams.forEach((f, fi) => { if (f.kind === 'inv' && state.famVis[fi] && !centreTaken) o += `<circle r="0.022" fill="#fffdf8" stroke="#222" stroke-width="0.012" pointer-events="none"/>`; });
+    // Kristallachsen
+    if (state.showAxes && showT) ['a', 'b', 'c'].forEach((n, j) => {
+      const p = P(T(X.axesABC[j])); if (!p) return;
+      let q = st(p); const r = Math.hypot(q[0], q[1]);
+      if (r > 0.9) q = [q[0] / r * 1.1, q[1] / r * 1.1];
+      o += `<text x="${f3(q[0] + (r <= 0.9 ? 0.07 : 0))}" y="${f3(q[1] + (r <= 0.9 ? -0.05 : 0.035))}" font-size="0.11" font-style="italic" font-family="IBM Plex Serif, serif" fill="${p[2] < -1e-6 ? '#a3a8b2' : '#4a5263'}" text-anchor="middle">${n}</text>`;
+    });
+    stereoEl.innerHTML = o;
+  }
+  stereoEl.addEventListener('click', ev => {
+    const g = ev.target.closest('.pole'); if (!g || opAnim) return;
+    const fi = +g.dataset.fi;
+    state.marked = fi === state.marked ? -1 : fi; updateMark(); stereoDirty = true;
+  });
+
+  // ---------- Quiz ----------
+  const quizBtn = document.getElementById('quizBtn');
+  quizBtn.onclick = () => quiz.on ? endQuiz() : startQuiz();
+  let quizFb = { cls: '', html: '' };
+  function startQuiz() {
+    quiz.on = true; quiz.score = 0; quiz.total = 0; quiz.entry = null;
+    document.body.classList.add('quiz'); applyStatic(); nextQuiz();
+    document.getElementById('stage').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+  function endQuiz() {
+    quiz.on = false; document.body.classList.remove('quiz'); applyStatic();
+    select(state.entry);
+    state.X.sym.fams.forEach((f, i) => setFam(i, true));
+  }
+  function nextQuiz() {
+    let e; do { e = ENTRIES[Math.floor(Math.random() * ENTRIES.length)]; } while (e === quiz.entry || (quiz.entry && e.c === quiz.entry.c));
+    Object.assign(quiz, { entry: e, attempts: 0, solved: false, revealed: false, wrong: new Set() });
+    quiz.total++; quizFb = { cls: '', html: '' };
+    select(e);
+  }
+  function renderQuiz() {
+    const el = document.getElementById('pQuiz'), e = quiz.entry;
+    el.innerHTML = `<h4>${t('quiz')}</h4><h2>${t('qTitle')}</h2><div class="muted">${t('qIntro')}</div>
+      <div class="qgrid">${SYSTEMS.map(sys => `<div class="qrow" style="--sys:rgb(${SYS_TINT[sys].join(',')})"><span class="qs">${trSys(sys)}</span>${CLASSES.filter(c => c.system === sys).map(c =>
+        `<button class="qb ${quiz.wrong.has(c.id) ? 'wrong' : ''} ${quiz.solved && c === e.c ? 'right' : ''}" data-id="${c.id}">${hmHTML(c.hm)}</button>`).join('')}</div>`).join('')}</div>
+      <div class="qfb ${quizFb.cls}">${quizFb.html}</div>
+      <div class="qact">${quiz.solved ? '' : `<button class="tb" id="qReveal">${t('qReveal')}</button>`}<button class="tb ${quiz.solved ? 'primary' : ''}" id="qNext">${t('qNext')}</button>
+      <span class="qscore">${t('qScore', { a: quiz.score, b: quiz.total - (quiz.solved ? 0 : 1) })}</span></div>`;
+    el.querySelectorAll('.qb').forEach(b => b.onclick = () => answer(b.dataset.id));
+    const rv = el.querySelector('#qReveal'); if (rv) rv.onclick = () => { quiz.revealed = true; solve(false); };
+    el.querySelector('#qNext').onclick = nextQuiz;
+  }
+  function answer(id) {
+    if (quiz.solved) return;
+    if (id === quiz.entry.c.id) { solve(true); return; }
+    quiz.attempts++; quiz.wrong.add(id);
+    quizFb = { cls: 'no', html: t('qWrong') + (quiz.attempts >= 2 ? ' ' + t('qHint', { s: trSys(quiz.entry.c.system) }) : '') };
+    renderQuiz();
+  }
+  function solve(byAnswer) {
+    const e = quiz.entry;
+    quiz.solved = true;
+    if (byAnswer && quiz.attempts === 0) quiz.score++;
+    const sol = t('qSolved', { c: hmHTML(e.c.hm), n: trClass(e.c) });
+    quizFb = byAnswer ? { cls: 'ok', html: t('qRight') + ' ' + sol } : { cls: '', html: sol };
+    applyQuizUI();
+    state.X.sym.fams.forEach((f, i) => setFam(i, true));
+    renderQuiz();
+  }
+  function applyQuizUI() {
+    const hide = quiz.on && !quiz.solved;
+    ['pClass', 'pElems', 'pForms'].forEach(id => document.getElementById(id).hidden = hide);
+    document.getElementById('pQuiz').hidden = !quiz.on;
+    syncKindButtons();
+    if (hide) document.querySelectorAll('[data-kind]').forEach(b => { b.disabled = true; b.classList.remove('on'); });
+    document.getElementById('tAxes').disabled = hide;
+    axesG.visible = state.showAxes && !hide;
+    document.querySelectorAll('[data-look]').forEach(b => b.hidden = hide);
+    renderClass(); stereoDirty = true;
+  }
+
+  // ---------- Auswahl ----------
+  function select(e, userAction) {
+    const prevKinds = state.X ? new Set(state.X.sym.fams.filter((f, i) => state.famVis[i]).map(f => f.kind)) : new Set(['rot', 'rotoinv', 'mirror', 'inv']);
+    state.entry = e; state.X = getX(e); state.marked = -1; state.opIdx = {};
+    opAnim = null; crystalG.matrix.identity(); ghostG.visible = false;
+    // Sichtbarkeit nach Typ übernehmen
+    state.famVis = state.X.sym.fams.map(f => quiz.on && !quiz.solved ? false : prevKinds.has(f.kind));
+    cardEls.forEach((b, k) => b.classList.toggle('active', k === e));
+    buildCrystal(); buildElements(); buildAxes();
+    renderClass(); renderElements(); renderForms(); syncKindButtons();
+    root.quaternion.copy(qDefault()); viewAnim = null;
+    applyQuizUI(); if (quiz.on) renderQuiz();
+    stereoDirty = true;
+    if (!quiz.on) { try { history.replaceState(null, '', '#' + e.slug); } catch (_) { try { location.hash = e.slug; } catch (__) {} } }
+    if (userAction) {
+      const r = document.getElementById('stage').getBoundingClientRect();
+      if (r.top > window.innerHeight * 0.55) document.getElementById('stage').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }
+  window.addEventListener('keydown', ev => {
+    if (ev.target.tagName === 'INPUT' || quiz.on) return;
+    const i = ENTRIES.indexOf(state.entry);
+    if (ev.key === 'ArrowRight') select(ENTRIES[(i + 1) % ENTRIES.length]);
+    if (ev.key === 'ArrowLeft') select(ENTRIES[(i - 1 + ENTRIES.length) % ENTRIES.length]);
+  });
+  window.addEventListener('hashchange', () => { const e = ENTRIES.find(x => '#' + x.slug === location.hash); if (e && e !== state.entry) select(e); });
+
+  const start = ENTRIES.find(x => '#' + x.slug === location.hash) || ENTRIES.find(x => x.c.id === '32');
+  resize();
+  applyStatic(); renderGallery(); renderStereoNote();
+  select(start);
+  requestAnimationFrame(frame);
+  window.__KK = { state, select, ENTRIES, runOp, setFam, setLang, quiz, startQuiz, answer };
+})();
+
+</script>
+</body>
+</html>
