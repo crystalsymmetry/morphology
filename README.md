@@ -25,7 +25,7 @@ Nothing is modelled by hand. Each crystal is computed from
 
 All symmetry-equivalent faces are generated from the group, and the crystal shape is obtained as the intersection of the corresponding half-spaces. The symmetry elements are derived directly from the group matrices and grouped into families; for every example crystal it has been checked that each derived element maps the set of faces onto itself. Trigonal and hexagonal crystals use the hexagonal setting with Miller–Bravais indices (*hkil*).
 
-The app is a single self-contained HTML file. The only external dependency is [three.js](https://threejs.org/) (r128), loaded from cdnjs.
+The app is a single HTML file without any external requests: [three.js](https://threejs.org/) r128 (MIT licence, `vendor/`) and the IBM Plex fonts (SIL Open Font License, `fonts/`) are served from this repository. No cookies, no tracking – see [Legal notice & privacy](https://crystalsymmetry.github.io/morphology/legal.html).
 
 ## Notes
 
