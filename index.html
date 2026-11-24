@@ -556,8 +556,9 @@ const I18N = (() => {
     follow: L('Ansicht folgen', 'Follow view', 'Suivre la vue', 'Seguir la vista'),
     stereoLegend: L('● obere · ○ untere Halbkugel · Klick auf Pol markiert Fläche', '● upper · ○ lower hemisphere · click a pole to mark its face',
       '● hémisphère supérieur · ○ inférieur · clic sur un pôle : marquer la face', '● hemisferio superior · ○ inferior · clic en un polo marca la cara'),
-    stereoStd: L('Standardorientierung: c senkrecht zur Projektionsebene', 'Standard orientation: c normal to the projection plane',
-      'Orientation standard : c perpendiculaire au plan de projection', 'Orientación estándar: c perpendicular al plano de proyección'),
+    stereoStd: L('Standardorientierung: c zum Betrachter, b nach rechts – wie die 3D-Ansicht ‖ c.', 'Standard orientation: c towards the viewer, b to the right – same as the 3D view ‖ c.',
+      'Orientation standard : c vers l’observateur, b vers la droite – comme la vue 3D ‖ c.', 'Orientación estándar: c hacia el observador, b a la derecha, como la vista 3D ‖ c.'),
+    alignStereo: L('3D so ausrichten', 'Align 3D view', 'Aligner la vue 3D', 'Alinear vista 3D'),
     stereoFollow: L('Projektionsebene = Bildschirmebene', 'Projection plane = screen plane', 'Plan de projection = plan de l’écran', 'Plano de proyección = plano de la pantalla'),
     footer: L('Kristallformen sind idealisiert und aus Punktgruppe, Gitterparametern (gerundet) und relativen Zentralabständen der Formen {hkl} berechnet; die Symmetrieelemente werden direkt aus den Gruppenoperationen abgeleitet. Indizes trigonaler und hexagonaler Kristalle in Bravais-Miller-Notation (hkil), hexagonale Aufstellung.',
       'Crystal shapes are idealised and computed from the point group, (rounded) lattice parameters and relative central distances of the forms {hkl}; symmetry elements are derived directly from the group operations. Indices of trigonal and hexagonal crystals in Miller–Bravais notation (hkil), hexagonal setting.',
@@ -1456,8 +1457,8 @@ if (false) module.exports = THUMB;
     crystalG.add(eF, eB);
     // Markierung
     const markGeo = new THREE.BufferGeometry();
-    const mark = new THREE.Mesh(markGeo, new THREE.MeshBasicMaterial({ color: 0xffcc33, transparent: true, opacity: 0.85, side: THREE.DoubleSide, depthWrite: false }));
-    mark.renderOrder = 6; mark.visible = false; crystalG.add(mark);
+    const mark = new THREE.Mesh(markGeo, new THREE.MeshPhongMaterial({ color: 0xffc21a, emissive: 0x2a1c00, specular: 0x444444, shininess: 60, flatShading: true, transparent: true, opacity: markOpacity(), side: THREE.DoubleSide, depthWrite: false }));
+    mark.renderOrder = 5; mark.visible = false; crystalG.add(mark);
     // Flächenindizes
     const idxG = new THREE.Group(); crystalG.add(idxG);
     const totA = P.faces.reduce((a, f) => a + f.area, 0);
@@ -1477,13 +1478,14 @@ if (false) module.exports = THUMB;
     ghostG.add(ghost); ghostG.visible = false;
     updateMark();
   }
+  function markOpacity() { return Math.min(1, state.opacity + 0.2); }
   function updateMark() {
     const m = crystal.mark, X = state.X;
     if (state.marked < 0) { m.visible = false; return; }
     const f = X.poly.faces[state.marked], pos = [];
     const n = T(f.n).multiplyScalar(0.004);
     for (let t = 1; t < f.idx.length - 1; t++) [f.idx[0], f.idx[t], f.idx[t + 1]].forEach(i => { const v = T(X.poly.verts[i]).add(n); pos.push(v.x, v.y, v.z); });
-    m.geometry.dispose(); m.geometry = new THREE.BufferGeometry(); m.geometry.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+    m.geometry.dispose(); m.geometry = new THREE.BufferGeometry(); m.geometry.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); m.geometry.computeVertexNormals();
     m.visible = true;
   }
 
@@ -1572,10 +1574,11 @@ if (false) module.exports = THUMB;
     animateTo(new THREE.Quaternion().setFromRotationMatrix(m));
   }
   document.getElementById('vReset').onclick = () => { animateTo(qDefault()); camDist = 7; };
+  function alignToStereo() { lookAlong(new THREE.Vector3(0, 1, 0), new THREE.Vector3(0, 0, -1)); }
   document.querySelectorAll('[data-look]').forEach(b => b.onclick = () => {
     const j = 'abc'.indexOf(b.dataset.look), X = state.X;
     const d = T(X.axesABC[j]);
-    if (j === 2) lookAlong(d, T(X.axesABC[1]).add(T(X.axesABC[0]).multiplyScalar(-0.0001)));
+    if (j === 2) alignToStereo();
     else lookAlong(d, T(X.axesABC[2]));
   });
 
@@ -1725,6 +1728,7 @@ if (false) module.exports = THUMB;
     crystal.eF.geometry.setDrawRange(0, fi * 2); crystal.eB.geometry.setDrawRange(0, bi * 2);
     const showIdx = state.showIdx && !opAnim && !(quiz.on && !quiz.solved);
     crystal.idxSprites.forEach((sp, i) => { if (sp) sp.visible = showIdx && front[i]; });
+    if (state.marked >= 0) crystal.mark.renderOrder = front[state.marked] ? 5 : 2;
     fa.needsUpdate = true; ba.needsUpdate = true;
   }
 
@@ -1782,7 +1786,7 @@ if (false) module.exports = THUMB;
   tgl('tLabels', 'labels', () => labelSprites.forEach(s => s.visible = state.labels));
   tgl('tIdx', 'showIdx');
   tgl('tSpin', 'spin');
-  document.getElementById('opacity').oninput = e => { state.opacity = +e.target.value; [crystal.front, crystal.back].forEach(m => { m.material.opacity = state.opacity; }); };
+  document.getElementById('opacity').oninput = e => { state.opacity = +e.target.value; [crystal.front, crystal.back].forEach(m => { m.material.opacity = state.opacity; }); crystal.mark.material.opacity = markOpacity(); };
 
   // ---------- Info-Panels ----------
   function glyphSVG(f) {
@@ -1900,7 +1904,7 @@ if (false) module.exports = THUMB;
       </svg>
       <ol>${h.s.map(x => `<li>${x}</li>`).join('')}</ol><div>${h.r}</div><div style="margin-top:8px">${h.m}</div>`;
   }
-  function renderStereoNote() { document.getElementById('stereoNote').innerHTML = t(followCb.checked ? 'stereoFollow' : 'stereoStd') + '<br>' + t('stereoLegend') + `<br><span style="display:inline-block;width:18px;height:3px;background:#e8960c;vertical-align:middle;margin-right:5px"></span>${t('stereoMirror')}`;  renderStereoHelp(); }
+  function renderStereoNote() { document.getElementById('stereoNote').innerHTML = t(followCb.checked ? 'stereoFollow' : 'stereoStd') + (followCb.checked ? '' : ` <button class="ib" id="alignStereo" style="margin-left:4px">${t('alignStereo')}</button>`) + '<br>' + t('stereoLegend') + `<br><span style="display:inline-block;width:18px;height:3px;background:#e8960c;vertical-align:middle;margin-right:5px"></span>${t('stereoMirror')}`;  renderStereoHelp(); const ab = document.getElementById('alignStereo'); if (ab) ab.onclick = alignToStereo; }
   function makeProj() {
     const M = crystalG.matrix.clone();
     if (followCb.checked) M.premultiply(new THREE.Matrix4().makeRotationFromQuaternion(root.quaternion));
